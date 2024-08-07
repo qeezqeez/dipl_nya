@@ -160,6 +160,7 @@ add({ source = "nvim-lua/plenary.nvim" })
 -- добабляем плагин edluffy/specs.nvim - показывает куда перемещается КУРСОР
 add({ source = "edluffy/specs.nvim" })
 
+add({ source = "MunifTanjim/nui.nvim" })
 -------------ADD PLUGINS: FINISH-------------------------------------------------
 
 -----MAPPINGS:-------------------------------------------------------------------
@@ -173,5 +174,5 @@ vim.keymap.set('n', '<leader>o', ':Neotree float git_status<CR>')
 -- NeoTree: FINISH
 
 require('dipl').setup {
-  DICTIONARY_PATH = "path/to/dictionary",
+  DICTIONARY_PATH = "/home/qeez/documents/dipl_test/dict.txt",
 }
