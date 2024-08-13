@@ -1,132 +1,191 @@
 local M = {}
-
--- dictionary structure - {word = [,{key, translate, colour, comment}]
+-- dictionary structure - {word = {{key, translate, colour, comment},}
 local DICTIONARY = {}
 
-function M.parse_value(line, expected_len)
-  local arr_val = {}
+function M.parse_word_fields(raw_dictionary, from_line, to_line)
+  local value_table = {}
 
-  local index = 0
-  for word in string.gmatch(line, '([^,\t]+)') do -- [^set] - first caret for excluding all characters in set
-    index = index + 1
-    if index > expected_len then
-      return nil, "Broken format"
+  -- Structure for dict {word = {key = string, translate = string, colour = string, comment = string},}
+  for i = from_line, to_line do
+    -- Dict consist a line values for word
+    local line_result = {}
+    -- Temporary table for store values in a line
+    local table_values = {}
+
+    -- Filling line with values
+    for value in raw_dictionary[i]:gmatch('([^,{}\t]+)') do
+      table.insert(table_values, value)
     end
 
-    table.insert(arr_val, word:match '^%s*(.*)') -- any set of characters between spaces inserts in arr_val
-  end
-
-  return arr_val, nil
-end
-
-function M.parse_list(lines, index_start, index_end, list_valname)
-  local list_value = {}
-  for i = 1, #list_valname do
-    list_value[list_valname[i]] = {} -- array
-  end
-
-  for i = index_start, index_end do
-    local value, msg = M.parse_value(lines[i], #list_valname) -- {}
-    assert(value, string.format("%s [String number: %d]\nString = %s", msg, i, lines[i]))
-
-    for x = 1, #list_valname do
-      table.insert(list_value[list_valname[x]], value[x])
+    -- Placing values in dict
+    for x = 1, #M.VALUES_FORMAT do
+      line_result[M.VALUES_FORMAT[x]] = table_values[x]
     end
+
+    -- Placing dicts for word in one table
+    assert(line_result, "Error while parsing dictionary. Check for syntax errors in dictionary.")
+    table.insert(value_table, line_result)
   end
-  return list_value
+
+  return value_table
 end
 
-function M.parse_dictionary(lines, format_value)
-  local list_valname = {}
-  -- insert in table all key words in dictionary structure splitted by , and space
-  -- keys (key, translate, color, comment)
-  for valname in format_value:gmatch('([^, ]+)') do
-    table.insert(list_valname, valname)
-  end
-
+-- Parsing raw dictionary table
+function M.parse(raw_dictionary)
   local word = nil
-  local start_values = nil
-  for i = 1, #lines do
-    if word == nil and string.sub(lines[i], 1, 1) == '"' then
-      word = string.match(lines[i], '%a+')
-      assert(word, string.format("Could not recognize word. String: %d", i))
-      start_values = i + 1
-    elseif start_values ~= nil and string.sub(lines[i], 1, 1) == ']' then
-      DICTIONARY[word] = M.parse_list(lines, start_values, i - 1, list_valname)
-      start_values = nil
+  local captured_word_position = nil
+
+  for index = 1, #raw_dictionary do
+    local line = raw_dictionary[index]
+
+    if not word and line:match('"(%a+)"') then
+      word = line:match('"(%a+)"')
+      captured_word_position = index
+    elseif string.sub(line, 1, 1) == "]" then
+      assert(word, string.format("Dictionary parse error. String: %s", index))
+      DICTIONARY[word] = M.parse_word_fields(raw_dictionary, captured_word_position + 1, index - 1)
+
       word = nil
     end
   end
 end
 
-function M.collect_line(abspath_file)
-  local file, msg = io.open(abspath_file, "r")
-  assert(file, string.format("%s%s", "Could not open file", msg)) -- just return pretty error
+-- Load dictionary in memory
+function M.load_dictionary()
+  local file, error = io.open(M.DICTIONARY_PATH, "r")
+  assert(file, error)
 
-  -- insert lines of file in table
-  local lines = {}
+  -- Dictionary without formatting
+  local raw_dictionary = {}
   for line in file:lines() do
-    table.insert(lines, line)
+    print(line)
+    table.insert(raw_dictionary, line)
   end
-  file:close()
-  return lines
+
+  M.parse(raw_dictionary)
 end
 
-local Menu = require("nui.menu")
-local event = require("nui.utils.autocmd").event
+function M.get_comment_popup(comment, winid)
+  local Popup = require("nui.popup")
 
-local popup_options = {
-  relative = "cursor",
-  position = {
-    row = 1,
-    col = 0,
-  },
-  border = {
-    style = "rounded",
-    text = {
-      top = "[Choose item]",
-      top_align = "center"
+  local popup = Popup({
+    relative = {
+      type = "win",
+      winid = winid,
     },
-  },
-  win_options = {
-    winhighlight = "Normal:Normal",
-  }
-}
+    size = {
+      width = "49%",
+      height = 10,
+    },
 
-local menu = Menu(popup_options, {
-  lines = {
-    Menu.separator("Group One"),
-    Menu.item("Item 1"),
-    Menu.item("Item 2"),
-    Menu.separator("Group Two", {
-      char = "-",
-      text_align = "right",
-    }),
-    Menu.item("Item 3"),
-    Menu.item("Item 4"),
-  },
-  max_width = 20,
-  keymap = {
-    focus_next = { "j", "<Down>", "<Tab>" },
-    focus_prev = { "k", "<Up>", "<S-Tab>" },
-    close = { "<Esc>", "<C-c>", "q" },
-    submit = { "<CR>", "<Space>" }
-  },
-  on_close = function()
-    print("CLOSED")
-  end,
-  on_submit = function(item)
-    print("SUBMITTED", vim.inspect(item.text))
+    position = {
+      row = "100%",
+      col = "100%",
+    },
+    border = {
+      style = "rounded",
+      text = {
+        top = "Комментарий",
+        top_align = "center",
+      },
+    },
+    win_options = {
+      winhighlight = "Normal:Normal",
+    }
+  })
+
+  return popup
+end
+
+-- Drawing window with translate variants
+function M.draw_menu()
+  -- Word under cursos
+  local selected_word = vim.fn.expand("<cword>")
+  -- Table with dicts for the word
+  local values_dicts = DICTIONARY[selected_word]
+
+  -- Winid for create menu and popup in one window
+  local shared_winid = vim.api.nvim_get_current_win()
+  --- Popup for comment
+  local popup = M.get_comment_popup("", shared_winid)
+
+  -- Menu constructor
+  local Menu = require("nui.menu")
+  -- Menu items for selected word which consists value dicts
+  local menu_items = {}
+  -- Generate menu.item lines
+  local function get_items()
+    for i = 1, #values_dicts do
+      local str = ""
+      for x = 1, #M.VALUES_FORMAT - 1 do
+        str = str .. values_dicts[i][M.VALUES_FORMAT[x]]
+      end
+      table.insert(menu_items, Menu.item(str, values_dicts[i]))
+    end
+    return menu_items
   end
-})
+
+  local popup_options = {
+    relative = "win",
+
+    size = {
+      width = "50%",
+      height = 10,
+    },
+
+    position = {
+      row = "100%",
+      col = 0,
+    },
+
+    border = {
+      style = "rounded",
+      text = {
+        top = selected_word,
+        top_align = "center",
+      },
+    },
+
+    win_options = {
+      winhighlight = "Normal:Normal",
+    }
+  }
+
+  local menu = Menu(popup_options, {
+    lines = get_items(),
+    keymap = {
+      focus_next = { "j", "<Down>" },
+      focus_prev = { "k", "<Up>" },
+      close = { "<Esc>", "q" },
+      submit = { "<CR>" },
+    },
+
+    on_close = function()
+      if popup then
+        popup:unmount()
+      end
+    end,
+
+    on_change = function(item)
+      vim.api.nvim_buf_set_lines(popup.bufnr, 0, -1, false, { item["comment"] })
+      popup:mount()
+    end,
+
+    on_submit = function(item)
+      popup:unmount()
+      print(item.key)
+    end,
+  })
+  menu:mount()
+end
 
 function M.enable()
+  M.load_dictionary()
   --- MAPPINGS ---
   vim.keymap.set('n', M.KEYMAP_MENU, function()
-    require('dipl').menu()
+    require('dipl').draw_menu()
   end)
   --- MAPPINGS END ---
-  M.load_dictionary()
 end
 
 function M.disable()
@@ -137,13 +196,9 @@ function M.disable()
   --- UNMAPPING END ---
 end
 
-function M.menu()
-  print('And you does not seemed to understand...')
-  menu:mount()
-end
-
 function M.setup(opts)
   --- CONFIG ---
+  M.VALUES_FORMAT = { "key", "translate", "color", "comment", }
   M.DICTIONARY_PATH = opts.DICTIONARY_PATH
   assert(M.DICTIONARY_PATH, "Путь к словарю либо не задан, либо задан неверно")
 
