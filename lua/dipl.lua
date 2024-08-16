@@ -58,11 +58,19 @@ function M.load_dictionary()
   -- Dictionary without formatting
   local raw_dictionary = {}
   for line in file:lines() do
-    print(line)
     table.insert(raw_dictionary, line)
   end
 
   M.parse(raw_dictionary)
+end
+
+-- Highlights keywords from dictionary
+function M.highlight_words()
+  vim.cmd(":highlight Keyword guibg=" .. M.DEFAULT_COLOUR)
+
+  for word, _ in pairs(DICTIONARY) do
+    vim.cmd(":syntax keyword Keyword " .. word)
+  end
 end
 
 function M.get_comment_popup(comment, winid)
@@ -120,6 +128,11 @@ function M.draw_menu()
       for x = 1, #M.VALUES_FORMAT - 1 do
         str = str .. values_dicts[i][M.VALUES_FORMAT[x]]
       end
+
+      -- Inserting index field for drawing position
+      values_dicts[i].index = i
+
+      -- Resulting table with items for menu and his values in parts of menu
       table.insert(menu_items, Menu.item(str, values_dicts[i]))
     end
     return menu_items
@@ -167,7 +180,8 @@ function M.draw_menu()
     end,
 
     on_change = function(item)
-      vim.api.nvim_buf_set_lines(popup.bufnr, 0, -1, false, { item["comment"] })
+      vim.api.nvim_buf_set_lines(popup.bufnr, 0, 2, false,
+        { string.format("%s/%s", item.index, #values_dicts), item.comment })
       popup:mount()
     end,
 
@@ -181,25 +195,31 @@ end
 
 function M.enable()
   M.load_dictionary()
+  M.highlight_words()
   --- MAPPINGS ---
   vim.keymap.set('n', M.KEYMAP_MENU, function()
     require('dipl').draw_menu()
+  end)
+
+  vim.keymap.set('n', M.KEYMAP_DISABLE_PLUGIN, function()
+    require('dipl').disable()
   end)
   --- MAPPINGS END ---
 end
 
 function M.disable()
   --- UNMAPPING ---
-  print(M.KEYMAP_MENU)
   vim.keymap.del('n', M.KEYMAP_DISABLE_PLUGIN)
   vim.keymap.del('n', M.KEYMAP_MENU)
   --- UNMAPPING END ---
+  vim.cmd(":syntax off")
 end
 
 function M.setup(opts)
   --- CONFIG ---
   M.VALUES_FORMAT = { "key", "translate", "color", "comment", }
   M.DICTIONARY_PATH = opts.DICTIONARY_PATH
+  M.DEFAULT_COLOUR = "#330066"
   assert(M.DICTIONARY_PATH, "Путь к словарю либо не задан, либо задан неверно")
 
   M.KEYMAP_ENABLE_PLUGIN = opts.ENABLE_PLUGIN_KEYMAP or "<C-l>"
@@ -210,9 +230,6 @@ function M.setup(opts)
   --- MAPPINGS ---
   vim.keymap.set('n', M.KEYMAP_ENABLE_PLUGIN, function()
     require("dipl").enable()
-  end)
-  vim.keymap.set('n', M.KEYMAP_DISABLE_PLUGIN, function()
-    require('dipl').disable()
   end)
   --- MAPPINGS END ---
 end
