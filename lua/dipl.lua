@@ -66,11 +66,45 @@ end
 
 -- Highlights keywords from dictionary
 function M.highlight_words()
-  vim.cmd(":highlight Keyword guibg=" .. M.DEFAULT_COLOUR)
+  vim.cmd(":highlight Keyword guifg=" .. M.DEFAULT_COLOUR)
 
   for word, _ in pairs(DICTIONARY) do
     vim.cmd(":syntax keyword Keyword " .. word)
   end
+end
+
+---@param pos table --
+---@param word string -- Word for translate
+-- Highlights word under cursos while meni is open
+function M.highlight_under_cusror(word, pos, buff_id)
+  -- TODO: make it work
+  local cursor_row = pos[1] -- one-based
+  local cursor_col = pos[2] -- zero-based
+
+  local current_string = vim.api.nvim_buf_get_lines(buff_id, cursor_row - 1, cursor_row, false)[1]
+  local word_substring = nil
+  local word_pos = nil
+
+  if cursor_col < #word then
+    word_substring = current_string:sub(0, #word + cursor_col)
+    word_pos = word_substring:find(word) - 1
+  else
+    word_substring = current_string:sub(cursor_col - (#word - 2), cursor_col + #word)
+    word_pos = word_substring:find(word) - #word + cursor_col
+    print(word_pos)
+  end
+  vim.api.nvim_set_hl(1, "MyHighlight", { bg = M.COLOUR_FOR_CHOICE })
+  vim.api.nvim_buf_add_highlight(buff_id, 1, "MyHighlight", cursor_row - 1, word_pos, word_pos + #word)
+  vim.api.nvim_set_hl_ns(1)
+
+  -- I do not know how it works. I need refactor this by start, but no time to this.
+end
+
+---@param pos table -- {start_pos, end_pos}
+---@param word string -- Word for translate
+-- Insert in text word translate
+function M.translate_word(word, pos)
+  -- TODO: make it work
 end
 
 function M.get_comment_popup(comment, winid)
@@ -107,13 +141,17 @@ end
 
 -- Drawing window with translate variants
 function M.draw_menu()
+  -- Winid for create menu and popup in one window
+  local shared_winid = vim.api.nvim_get_current_win()
+  local shared_buffer = vim.api.nvim_get_current_buf()
+
   -- Word under cursos
   local selected_word = vim.fn.expand("<cword>")
+  local cursor_position = vim.api.nvim_win_get_cursor(shared_winid)
+
   -- Table with dicts for the word
   local values_dicts = DICTIONARY[selected_word]
 
-  -- Winid for create menu and popup in one window
-  local shared_winid = vim.api.nvim_get_current_win()
   --- Popup for comment
   local popup = M.get_comment_popup("", shared_winid)
 
@@ -177,15 +215,19 @@ function M.draw_menu()
       if popup then
         popup:unmount()
       end
+      vim.api.nvim_buf_clear_namespace(shared_buffer, 1, 0, -1)
     end,
 
     on_change = function(item)
+      vim.api.nvim_buf_clear_namespace(shared_buffer, 1, 0, -1)
       vim.api.nvim_buf_set_lines(popup.bufnr, 0, 2, false,
         { string.format("%s/%s", item.index, #values_dicts), item.comment })
+      M.highlight_under_cusror(selected_word, cursor_position, shared_buffer)
       popup:mount()
     end,
 
     on_submit = function(item)
+      vim.api.nvim_buf_clear_namespace(shared_buffer, 1, 0, -1)
       popup:unmount()
       print(item.key)
     end,
@@ -219,7 +261,8 @@ function M.setup(opts)
   --- CONFIG ---
   M.VALUES_FORMAT = { "key", "translate", "color", "comment", }
   M.DICTIONARY_PATH = opts.DICTIONARY_PATH
-  M.DEFAULT_COLOUR = "#330066"
+  M.DEFAULT_COLOUR = opts.DEFAULT_COLOUR or "#18fff2"
+  M.COLOUR_FOR_CHOICE = opts.COLOUR_FOR_CHOICE or "#aaa0ff"
   assert(M.DICTIONARY_PATH, "Путь к словарю либо не задан, либо задан неверно")
 
   M.KEYMAP_ENABLE_PLUGIN = opts.ENABLE_PLUGIN_KEYMAP or "<C-l>"

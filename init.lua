@@ -175,4 +175,5 @@ vim.keymap.set('n', '<leader>o', ':Neotree float git_status<CR>')
 
 require('dipl').setup {
   DICTIONARY_PATH = "/home/qeez/documents/dipl_test/dict.txt",
+  COLOUR_FOR_CHOICE = "#aaaa11"
 }
