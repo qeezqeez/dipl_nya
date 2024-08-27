@@ -1,4 +1,4 @@
 .luarc.json
 notes.txt
 init.lua
-lua/dipl_dicts/*
+lua/dipl_dicts/**
