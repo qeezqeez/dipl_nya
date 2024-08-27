@@ -1,6 +1,6 @@
 Установка плагина:
 Файл dipl.nvim поместить в ~/.config/nvim/lua/.
-В init.lua в директории ~/.config/nvim/ добавить зависимость при помощи mini:
+В init.lua в директории ~/.config/nvim/ добавить зависимость при помощи mini.deps:
 
 add({ source = "MunifTanjim/nui.nvim"})
 
