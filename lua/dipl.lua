@@ -34,46 +34,12 @@ function M.parse_word_fields(raw_dictionary, from_line, to_line)
   return value_table
 end
 
--- Parsing raw dictionary table
-function M.parse(raw_dictionary)
-  local word = nil
-  local captured_word_position = nil
-
-  for index = 1, #raw_dictionary do
-    local line = raw_dictionary[index]
-
-    if not word and line:match('"(%a+)"') then
-      word = line:match('"(%a+)"')
-      captured_word_position = index
-    elseif string.sub(line, 1, 1) == "]" then
-      assert(word, string.format("Dictionary parse error. String: %s", index))
-      DICTIONARY[word] = M.parse_word_fields(raw_dictionary, captured_word_position + 1, index - 1)
-
-      word = nil
-    end
-  end
-end
-
--- Load dictionary in memory
-function M.load_dictionary()
-  local file, error = io.open(M.DICTIONARY_PATH, "r")
-  assert(file, error)
-
-  -- Dictionary without formatting
-  local raw_dictionary = {}
-  for line in file:lines() do
-    table.insert(raw_dictionary, line)
-  end
-
-  M.parse(raw_dictionary)
-end
-
 -- Highlights keywords from dictionary
 function M.highlight_words()
   vim.cmd(":highlight Keyword guifg=" .. M.DEFAULT_COLOUR)
 
   for word, _ in pairs(DICTIONARY) do
-    vim.cmd(":syntax keyword Keyword " .. word)
+    vim.cmd(":syntax keyword Keyword " .. word:sub(0, -2))
   end
 end
 
@@ -97,21 +63,26 @@ function M.highlight_translated_words(buff_id)
       translate = sub_line:match("%[(.*)")
       translate = translate:gsub("%].*", "")
       local i = 1
-      while DICTIONARY[word][i] ~= nil do
-        if translate == DICTIONARY[word][i].translate then
-          translate_colour = DICTIONARY[word][i].colour
-          break
+      if not DICTIONARY[word .. "_"] then
+        print("Для слова " .. word .. "не найдено перевода в словаре")
+      else
+        while DICTIONARY[word .. "_"][i] ~= nil do
+          if translate == DICTIONARY[word .. "_"][i].translate then
+            translate_colour = DICTIONARY[word .. "_"][i].colour
+            break
+          end
+          if DICTIONARY[word .. "_"][i].translate == nil then
+            break
+          end
+          i = i + 1
         end
-        if DICTIONARY[word][i].translate == nil then
-          break
-        end
-        i = i + 1
-      end
-      vim.api.nvim_set_hl(111, "TranslateHighlight" .. COUNT, { fg = translate_colour })
-      vim.api.nvim_buf_add_highlight(buff_id, 111, "TranslateHighlight" .. COUNT, line_num, index[1], index[1] + #word)
-      vim.api.nvim_set_hl_ns(111)
+        vim.api.nvim_set_hl(111, "TranslateHighlight" .. COUNT, { fg = translate_colour })
+        vim.api.nvim_buf_add_highlight(buff_id, 111, "TranslateHighlight" .. COUNT, line_num, index[1] - 1,
+          index[1] + #word + #translate + 3)
+        vim.api.nvim_set_hl_ns(111)
 
-      COUNT = COUNT + 1
+        COUNT = COUNT + 1
+      end
       sub_line = sub_line:sub(index[2] + 1, -1)
       index_storage = index[2]
     end
@@ -216,7 +187,7 @@ function M.draw_menu()
   local cursor_position = vim.api.nvim_win_get_cursor(shared_winid)
 
   -- Table with dicts for the word
-  local values_dicts = DICTIONARY[selected_word]
+  local values_dicts = DICTIONARY[selected_word .. "_"]
 
   --- Popup for comment
   local popup = M.get_comment_popup("", shared_winid)
@@ -310,7 +281,7 @@ end
 
 function M.enable()
   local current_buffer = vim.api.nvim_get_current_buf()
-  M.load_dictionary()
+  DICTIONARY, DICTIONARY_NAME = require("dipl_dicts")
   M.highlight_words()
   M.highlight_translated_words(current_buffer)
   --- MAPPINGS ---
@@ -336,10 +307,8 @@ end
 function M.setup(opts)
   --- CONFIG ---
   M.VALUES_FORMAT = { "key", "translate", "colour", "comment", }
-  M.DICTIONARY_PATH = opts.DICTIONARY_PATH
   M.DEFAULT_COLOUR = opts.DEFAULT_COLOUR or "#18fff2"
   M.COLOUR_FOR_CHOICE = opts.COLOUR_FOR_CHOICE or "#aaa0ff"
-  assert(M.DICTIONARY_PATH, "Путь к словарю либо не задан, либо задан неверно")
 
   M.KEYMAP_ENABLE_PLUGIN = opts.ENABLE_PLUGIN_KEYMAP or "<C-l>"
   M.KEYMAP_DISABLE_PLUGIN = opts.KEYMAP_DISABLE_PLUGIN or "<C-j>"

@@ -2,3 +2,4 @@
 notes.txt
 init.lua
 lua/dipl_dicts/*.lua
+!lua/dipl_dicts/init.lua
