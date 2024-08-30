@@ -282,6 +282,9 @@ end
 function M.enable()
   local current_buffer = vim.api.nvim_get_current_buf()
   DICTIONARY, DICTIONARY_NAME = require("dipl_dicts")
+  -- TODO: Hardcode is bad practice... Repair this shit
+  package.loaded["dipl_dicts.dict_2"] = nil
+  package.loaded["dipl_dicts"] = nil
   M.highlight_words()
   M.highlight_translated_words(current_buffer)
   --- MAPPINGS ---
@@ -309,6 +312,7 @@ function M.setup(opts)
   M.VALUES_FORMAT = { "key", "translate", "colour", "comment", }
   M.DEFAULT_COLOUR = opts.DEFAULT_COLOUR or "#18fff2"
   M.COLOUR_FOR_CHOICE = opts.COLOUR_FOR_CHOICE or "#aaa0ff"
+  M.DICTS = opts.DICTS
 
   M.KEYMAP_ENABLE_PLUGIN = opts.ENABLE_PLUGIN_KEYMAP or "<C-l>"
   M.KEYMAP_DISABLE_PLUGIN = opts.KEYMAP_DISABLE_PLUGIN or "<C-j>"
