@@ -82,7 +82,6 @@ function M.highlight_translated_words(buff_id)
         vim.api.nvim_set_hl_ns(111)
 
         COUNT = COUNT + 1
-        print(word, translate)
       end
       sub_line = sub_line:sub(index[2] + 1 - index_storage, -1)
       index_storage = index[2]
