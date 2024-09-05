@@ -144,6 +144,22 @@ function M.translate_word(translate_item, word_pos, line, buff_id, word)
   vim.api.nvim_buf_set_lines(buff_id, line - 1, line, false, { translated_line })
 end
 
+function M.delete_translated_word()
+  local buff_id = vim.api.nvim_get_current_buf()
+  local win_id = vim.api.nvim_get_current_win()
+  local cursor_position = vim.api.nvim_win_get_cursor(win_id)
+  local line_number = vim.api.nvim_win_get_cursor(win_id)[1]
+  local word = vim.fn.expand("<cword>")
+
+  local line_to_delete = vim.api.nvim_buf_get_lines(buff_id, line_number - 1, line_number, false)[1]
+
+  local sub_start = line_to_delete:sub(1, cursor_position[2]):match("(.*)%(")
+  local sub_end = line_to_delete:sub(cursor_position[2], -1):match("%](.*)")
+  line_to_delete = sub_start .. word .. sub_end
+
+  vim.api.nvim_buf_set_lines(buff_id, line_number - 1, line_number, false, { line_to_delete })
+end
+
 function M.get_comment_popup(comment, winid)
   local Popup = require("nui.popup")
 
@@ -295,6 +311,9 @@ function M.enable()
   vim.keymap.set('n', M.KEYMAP_DISABLE_PLUGIN, function()
     require('dipl').disable()
   end)
+  vim.keymap.set('n', M.KEYMAP_DELETE_TRANSLATE, function()
+    require("dipl").delete_translated_word()
+  end)
   --- MAPPINGS END ---
 end
 
@@ -302,6 +321,7 @@ function M.disable()
   --- UNMAPPING ---
   vim.keymap.del('n', M.KEYMAP_DISABLE_PLUGIN)
   vim.keymap.del('n', M.KEYMAP_MENU)
+  vim.keymap.del('n', M.KEYMAP_DELETE_TRANSLATE)
   --- UNMAPPING END ---
   vim.cmd(":syntax off")
   vim.api.nvim_set_hl_ns(0)
@@ -317,6 +337,7 @@ function M.setup(opts)
   M.KEYMAP_ENABLE_PLUGIN = opts.ENABLE_PLUGIN_KEYMAP or "<C-l>"
   M.KEYMAP_DISABLE_PLUGIN = opts.KEYMAP_DISABLE_PLUGIN or "<C-j>"
   M.KEYMAP_MENU = opts.KEYMAP_MENU or "<C-k>"
+  M.KEYMAP_DELETE_TRANSLATE = opts.KEYMAP_DELETE_TRANSLATE or "<C-d>"
   --- CONFIG END ---
 
   --- MAPPINGS ---
