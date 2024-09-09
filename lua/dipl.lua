@@ -139,6 +139,10 @@ function M.translate_word(translate_item, word_pos, line, buff_id, word)
   local translated_line = nil
   local sub_start = line_to_translate:sub(1, word_pos.word_start)
   local sub_end = line_to_translate:sub(word_pos.word_end + 1, -1)
+  if sub_end:sub(1, 2) == ")[" then
+    sub_start = sub_start:sub(1, -2)
+    sub_end = sub_end:match("%](.*)")
+  end
   translated_line = sub_start .. "(" .. word .. ")[" .. translate_item.translate .. "]" .. sub_end
 
   vim.api.nvim_buf_set_lines(buff_id, line - 1, line, false, { translated_line })
