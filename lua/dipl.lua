@@ -230,9 +230,13 @@ function M.draw_menu()
 
       -- Inserting index field for drawing position
       values_dicts[i].index = i
+      local NuiLine = require("nui.line")
+      local line = NuiLine()
+      vim.cmd(":highlight " .. "colour" .. i .. " guifg=" .. values_dicts[i].colour)
+      line:append(str, "colour" .. i)
 
       -- Resulting table with items for menu and his values in parts of menu
-      table.insert(menu_items, Menu.item(str, values_dicts[i]))
+      table.insert(menu_items, Menu.item(line, values_dicts[i]))
     end
     return menu_items
   end
@@ -259,7 +263,7 @@ function M.draw_menu()
     },
 
     win_options = {
-      winhighlight = "Normal:Normal",
+      winhighlight = "Normal:TESTTEST",
     }
   }
 
@@ -280,7 +284,7 @@ function M.draw_menu()
       M.highlight_translated_words(shared_buffer)
     end,
 
-    on_change = function(item)
+    on_change = function(item, menu)
       vim.api.nvim_buf_clear_namespace(shared_buffer, 1, 0, -1)
       vim.api.nvim_buf_set_lines(popup.bufnr, 0, 2, false,
         { string.format("%s/%s", item.index, #values_dicts), item.comment })
