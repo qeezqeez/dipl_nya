@@ -304,10 +304,11 @@ function M.draw_menu()
 end
 
 function M.draw_comment()
-  local winid = vim.api.nvim_get_current_win()
   local word = vim.fn.expand("<cword>")
 
+  local winid = vim.api.nvim_get_current_win()
   local cursor = vim.api.nvim_win_get_cursor(winid)
+
   local line = vim.api.nvim_get_current_line()
   local translate = line:sub(cursor[2], -1):match("%[([^%]]*)")
 
@@ -345,7 +346,7 @@ function M.draw_comment()
     { string.format("%s/%s", translate_num, #DICTIONARY[word .. "_"]),
       DICTIONARY[word .. "_"][translate_num].comment })
 
-  popup:map("n", "q", function() popup:unmount() end, { noremap = true })
+  popup:map("n", { "q", "<esc>" }, function() popup:unmount() end, { noremap = true })
   popup:mount()
 end
 
