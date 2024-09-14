@@ -286,8 +286,14 @@ function M.draw_menu()
 
     on_change = function(item, menu)
       vim.api.nvim_buf_clear_namespace(shared_buffer, 1, 0, -1)
-      vim.api.nvim_buf_set_lines(popup.bufnr, 0, 2, false,
-        { string.format("%s/%s", item.index, #values_dicts), item.comment })
+      local comment = {}
+      for i in item.comment:gmatch("[^%c]*") do
+        if i ~= "" then
+          table.insert(comment, i)
+        end
+      end
+      vim.api.nvim_buf_set_lines(popup.bufnr, 0, -1, false,
+        { string.format("%s/%s", item.index, #values_dicts), unpack(comment) })
       M.highlight_under_cusror(selected_word, cursor_position, shared_buffer)
       popup:mount()
     end,
@@ -342,9 +348,15 @@ function M.draw_comment()
     end
   end
 
-  vim.api.nvim_buf_set_lines(popup.bufnr, 0, 1, false,
+  local comment = {}
+  for i in DICTIONARY[word .. "_"][translate_num].comment:gmatch("[^%c]*") do
+    if i ~= "" then
+      table.insert(comment, i)
+    end
+  end
+  vim.api.nvim_buf_set_lines(popup.bufnr, 0, -1, false,
     { string.format("%s/%s", translate_num, #DICTIONARY[word .. "_"]),
-      DICTIONARY[word .. "_"][translate_num].comment })
+      unpack(comment) })
 
   popup:map("n", { "q", "<esc>" }, function() popup:unmount() end, { noremap = true })
   popup:mount()
