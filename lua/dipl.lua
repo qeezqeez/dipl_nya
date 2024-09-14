@@ -263,7 +263,7 @@ function M.draw_menu()
     },
 
     win_options = {
-      winhighlight = "Normal:TESTTEST",
+      winhighlight = "Normal:Normal",
     }
   }
 
@@ -303,6 +303,52 @@ function M.draw_menu()
   menu:mount()
 end
 
+function M.draw_comment()
+  local winid = vim.api.nvim_get_current_win()
+  local word = vim.fn.expand("<cword>")
+
+  local cursor = vim.api.nvim_win_get_cursor(winid)
+  local line = vim.api.nvim_get_current_line()
+  local translate = line:sub(cursor[2], -1):match("%[([^%]]*)")
+
+  local Popup = require("nui.popup")
+  local popup = Popup({
+    position = {
+      row = "40%",
+      col = "40%"
+    },
+    relative = "editor",
+    size = {
+      width = M.COMMENT_POPUP_SIZE.col,
+      height = M.COMMENT_POPUP_SIZE.row,
+    },
+    focusable = true,
+    border = {
+      style = "rounded"
+    },
+    buf_options = {
+      readonly = true,
+      modifiable = false,
+    },
+    enter = true,
+  })
+
+  local translate_num = nil
+  for i = 1, #DICTIONARY[word .. "_"] do
+    if DICTIONARY[word .. "_"][i].translate == translate then
+      translate_num = i
+      break
+    end
+  end
+
+  vim.api.nvim_buf_set_lines(popup.bufnr, 0, 1, false,
+    { string.format("%s/%s", translate_num, #DICTIONARY[word .. "_"]),
+      DICTIONARY[word .. "_"][translate_num].comment })
+
+  popup:map("n", "q", function() popup:unmount() end, { noremap = true })
+  popup:mount()
+end
+
 function M.enable()
   local current_buffer = vim.api.nvim_get_current_buf()
   DICTIONARY, DICTIONARY_NAME = require("dipl_dicts")
@@ -319,9 +365,15 @@ function M.enable()
   vim.keymap.set('n', M.KEYMAP_DISABLE_PLUGIN, function()
     require('dipl').disable()
   end)
+
   vim.keymap.set('n', M.KEYMAP_DELETE_TRANSLATE, function()
     require("dipl").delete_translated_word()
   end)
+
+  vim.keymap.set("n", M.KEYMAP_GET_COMMENT, function()
+    require("dipl").draw_comment()
+  end)
+
   --- MAPPINGS END ---
 end
 
@@ -330,6 +382,7 @@ function M.disable()
   vim.keymap.del('n', M.KEYMAP_DISABLE_PLUGIN)
   vim.keymap.del('n', M.KEYMAP_MENU)
   vim.keymap.del('n', M.KEYMAP_DELETE_TRANSLATE)
+  vim.keymap.del('n', M.KEYMAP_GET_COMMENT)
   --- UNMAPPING END ---
   vim.cmd(":syntax off")
   vim.api.nvim_set_hl_ns(0)
@@ -341,11 +394,13 @@ function M.setup(opts)
   M.DEFAULT_COLOUR = opts.DEFAULT_COLOUR or "#18fff2"
   M.COLOUR_FOR_CHOICE = opts.COLOUR_FOR_CHOICE or "#aaa0ff"
   M.DICTS = opts.DICTS
+  M.COMMENT_POPUP_SIZE = opts.COMMENT_POPUP_SIZE or { row = 10, col = 40 }
 
   M.KEYMAP_ENABLE_PLUGIN = opts.ENABLE_PLUGIN_KEYMAP or "<C-l>"
   M.KEYMAP_DISABLE_PLUGIN = opts.KEYMAP_DISABLE_PLUGIN or "<C-j>"
   M.KEYMAP_MENU = opts.KEYMAP_MENU or "<C-k>"
   M.KEYMAP_DELETE_TRANSLATE = opts.KEYMAP_DELETE_TRANSLATE or "<C-d>"
+  M.KEYMAP_GET_COMMENT = opts.KEYMAP_GET_COMMENT or "<C-c>"
   --- CONFIG END ---
 
   --- MAPPINGS ---
