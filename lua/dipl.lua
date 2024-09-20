@@ -209,6 +209,11 @@ function M.draw_menu()
   -- Table with dicts for the word
   local values_dicts = DICTIONARY[selected_word .. "_"]
 
+  if values_dicts == nil then
+    print("Слова <" .. selected_word .. "> нет в активном словаре.")
+    return
+  end
+
   --- Popup for comment
   local popup = M.get_comment_popup("", shared_winid)
 
@@ -386,7 +391,6 @@ function M.enable()
   vim.keymap.set("n", M.KEYMAP_GET_COMMENT, function()
     require("dipl").draw_comment()
   end)
-
   --- MAPPINGS END ---
 end
 
