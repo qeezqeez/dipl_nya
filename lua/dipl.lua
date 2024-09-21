@@ -155,15 +155,17 @@ function M.delete_translated_word()
   local line_number = vim.api.nvim_win_get_cursor(win_id)[1]
   local word = vim.fn.expand("<cword>")
 
-  local line_to_delete = vim.api.nvim_buf_get_lines(buff_id, line_number - 1, line_number, false)[1]
+  local line = vim.api.nvim_buf_get_lines(buff_id, line_number - 1, line_number, false)[1]
 
-  local sub_start = line_to_delete:sub(1, cursor_position[2]):match("(.*)%(")
-  local sub_end = line_to_delete:sub(cursor_position[2], -1):match("%](.*)")
-  line_to_delete = sub_start .. word .. sub_end
+  local sub_start = line:sub(1, cursor_position[2]):match("(.*)%(")
+  local sub_end = line:sub(cursor_position[2], -1):match("%](.*)")
+  line = sub_start .. word .. sub_end
 
-  vim.api.nvim_buf_set_lines(buff_id, line_number - 1, line_number, false, { line_to_delete })
+  vim.api.nvim_buf_set_lines(buff_id, line_number - 1, line_number, false, { line })
+  M.highlight_translated_words(buff_id)
 end
 
+-- Return completed comment popup for menu
 function M.get_comment_popup(comment, winid)
   local Popup = require("nui.popup")
 
