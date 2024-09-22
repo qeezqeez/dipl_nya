@@ -38,21 +38,21 @@ function M.highlight_translated_words(buff_id)
       translate = sub_line:match("%[(.*)")
       translate = translate:gsub("%].*", "")
       local i = 1
-      if not DICTIONARIES[word .. "_"] then
+      if not CURRENT_DICTIONARY[word .. "_"] then
+        vim.api.nvim_set_hl(111, "TranslateHighlightDefault", { fg = M.NON_ACTIVE_TRANSLATE_COLOUR })
+        vim.api.nvim_buf_add_highlight(buff_id, 111, "TranslateHighlightDefault", line_num, index[1] - 1,
+          index[1] + #word + #translate + 3)
+        vim.api.nvim_set_hl_ns(111)
         sub_line = sub_line:sub(index[2] + 1 - index_storage, -1)
         index_storage = index[2]
       else
-        for _, v in ipairs(ALL_DICTS) do
-          if v[1][word .. "_"] ~= nil then
-            while v[1][word .. "_"][i] ~= nil do
-              if translate == v[1][word .. "_"][i].translate then
-                translate_colour = v[1][word .. "_"][i].colour
-                break
-              end
-              i = i + 1
-            end
+        while CURRENT_DICTIONARY[word .. "_"][i] ~= nil do
+          if CURRENT_DICTIONARY[word .. "_"][i].translate == translate then
+            translate_colour = CURRENT_DICTIONARY[word .. "_"][i].colour
+            i = 1
+            break
           end
-          i = 1
+          i = i + 1
         end
         if translate_colour ~= nil then
           vim.api.nvim_set_hl(111, "TranslateHighlight" .. COUNT, { fg = translate_colour })
@@ -65,6 +65,10 @@ function M.highlight_translated_words(buff_id)
           index_storage = index[2]
           translate_colour = nil
         else
+          vim.api.nvim_set_hl(111, "TranslateHighlightDefault", { fg = M.NON_ACTIVE_TRANSLATE_COLOUR })
+          vim.api.nvim_buf_add_highlight(buff_id, 111, "TranslateHighlightDefault", line_num, index[1] - 1,
+            index[1] + #word + #translate + 3)
+          vim.api.nvim_set_hl_ns(111)
           sub_line = sub_line:sub(index[2] + 1 - index_storage, -1)
           index_storage = index[2]
         end
@@ -74,8 +78,8 @@ function M.highlight_translated_words(buff_id)
 
   local lines_amount = vim.api.nvim_buf_line_count(buff_id)
   local line = nil
+  vim.api.nvim_buf_clear_namespace(buff_id, 111, 0, -1)
   for index = 0, lines_amount - 1 do
-    vim.api.nvim_buf_clear_namespace(buff_id, 111, index, index + 1)
     line = vim.api.nvim_buf_get_lines(buff_id, index, index + 1, false)[1]
     parse_line(line, index)
   end
@@ -364,6 +368,7 @@ end
 
 function M.draw_current_dictionary_selecter()
   local Menu = require("nui.menu")
+  local current_buffer = vim.api.nvim_get_current_buf()
 
   local function get_lines()
     local function get_keyword_num(dict)
@@ -374,7 +379,7 @@ function M.draw_current_dictionary_selecter()
       return counter
     end
     local items = {}
-    for i, v in ipairs(ALL_DICTS) do
+    for _, v in ipairs(ALL_DICTS) do
       local item = Menu.item(v[2] .. " [" .. get_keyword_num(v[1]) .. "]", v)
       table.insert(items, item)
     end
@@ -425,7 +430,6 @@ function M.draw_current_dictionary_selecter()
     on_submit = function(item)
       CURRENT_DICTIONARY = item[1]
       CURRENT_DICTIONARY_NAME = item[2]
-      print(item[2])
     end,
   })
   menu:mount()
@@ -435,7 +439,7 @@ function M.enable()
   local current_buffer = vim.api.nvim_get_current_buf()
   ALL_DICTS = require("dipl_dicts")
   package.loaded["dipl_dicts"] = nil
-  if #CURRENT_DICTIONARY == 0 then
+  if CURRENT_DICTIONARY_NAME == nil then
     CURRENT_DICTIONARY = ALL_DICTS[1][1]
     CURRENT_DICTIONARY_NAME = ALL_DICTS[1][2]
   else
@@ -493,6 +497,7 @@ function M.setup(opts)
   --- CONFIG ---
   M.VALUES_FORMAT = { "key", "translate", "colour", "comment", }
   M.DEFAULT_COLOUR = opts.DEFAULT_COLOUR or "#18fff2"
+  M.NON_ACTIVE_TRANSLATE_COLOUR = opts.NON_ACTIVE_TRANSLATE_COLOUR or "#66aacc"
   M.COLOUR_FOR_CHOICE = opts.COLOUR_FOR_CHOICE or "#aaa0ff"
   M.DICTS = opts.DICTS
   M.COMMENT_POPUP_SIZE = opts.COMMENT_POPUP_SIZE or { row = 10, col = 40 }
