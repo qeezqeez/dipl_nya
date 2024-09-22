@@ -430,6 +430,7 @@ function M.draw_current_dictionary_selecter()
     on_submit = function(item)
       CURRENT_DICTIONARY = item[1]
       CURRENT_DICTIONARY_NAME = item[2]
+      M.highlight_translated_words(current_buffer)
     end,
   })
   menu:mount()
