@@ -6,7 +6,10 @@ for i = 1, #files do
   if mod_name ~= "init" then
     dict, dict_name = unpack(require("dipl_dicts." .. mod_name))
 
-    table.insert(DICTIONARIES, { dict, dict_name })
+    if dict_name ~= nil then -- Dicts without name is unused.
+      table.insert(DICTIONARIES, { dict, dict_name })
+    end
+
     package.loaded["dipl_dicts." .. mod_name] = nil
   end
 end
