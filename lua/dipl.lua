@@ -39,30 +39,35 @@ function M.highlight_translated_words(buff_id)
       translate = translate:gsub("%].*", "")
       local i = 1
       if not DICTIONARIES[word .. "_"] then
-        print("Для слова " .. word .. "не найдено перевода в словаре")
+        sub_line = sub_line:sub(index[2] + 1 - index_storage, -1)
+        index_storage = index[2]
       else
-        for i, v in ipairs(ALL_DICTS) do
+        for _, v in ipairs(ALL_DICTS) do
           if v[1][word .. "_"] ~= nil then
             while v[1][word .. "_"][i] ~= nil do
               if translate == v[1][word .. "_"][i].translate then
                 translate_colour = v[1][word .. "_"][i].colour
                 break
               end
-              if v[1][word .. "_"][i].translate == nil then
-                break
-              end
               i = i + 1
             end
           end
+          i = 1
         end
-        vim.api.nvim_set_hl(111, "TranslateHighlight" .. COUNT, { fg = translate_colour })
-        vim.api.nvim_buf_add_highlight(buff_id, 111, "TranslateHighlight" .. COUNT, line_num, index[1] - 1,
-          index[1] + #word + #translate + 3)
-        vim.api.nvim_set_hl_ns(111)
+        if translate_colour ~= nil then
+          vim.api.nvim_set_hl(111, "TranslateHighlight" .. COUNT, { fg = translate_colour })
+          vim.api.nvim_buf_add_highlight(buff_id, 111, "TranslateHighlight" .. COUNT, line_num, index[1] - 1,
+            index[1] + #word + #translate + 3)
+          vim.api.nvim_set_hl_ns(111)
 
-        COUNT = COUNT + 1
-        sub_line = sub_line:sub(index[2] + 1 - index_storage, -1)
-        index_storage = index[2]
+          COUNT = COUNT + 1
+          sub_line = sub_line:sub(index[2] + 1 - index_storage, -1)
+          index_storage = index[2]
+          translate_colour = nil
+        else
+          sub_line = sub_line:sub(index[2] + 1 - index_storage, -1)
+          index_storage = index[2]
+        end
       end
     end
   end
@@ -70,6 +75,7 @@ function M.highlight_translated_words(buff_id)
   local lines_amount = vim.api.nvim_buf_line_count(buff_id)
   local line = nil
   for index = 0, lines_amount - 1 do
+    vim.api.nvim_buf_clear_namespace(buff_id, 111, index, index + 1)
     line = vim.api.nvim_buf_get_lines(buff_id, index, index + 1, false)[1]
     parse_line(line, index)
   end
