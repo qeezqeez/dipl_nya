@@ -1,44 +1,19 @@
 local M = {}
 -- dictionary structure - {word = {{key, translate, colour, comment},}}
-local DICTIONARY = {}
+
+local ALL_DICTS = {}          -- Contains all dicts
+local CURRENT_DICTIONARY = {} -- Dictionary used for translate
+local CURRENT_DICTIONARY_NAME = nil
+local DICTIONARIES = {}       -- All used dictionaries words
 
 -- Used for creation custom highlight groups. Please do not touch
 local COUNT = 2
-function M.parse_word_fields(raw_dictionary, from_line, to_line)
-  local value_table = {}
-
-  -- Structure for dict {word = {key = string, translate = string, colour = string, comment = string},}
-  for i = from_line, to_line do
-    -- Dict consist a line values for word
-    local line_result = {}
-    -- Temporary table for store values in a line
-    local table_values = {}
-    local tmp = nil
-    -- Filling line with values
-    for value in raw_dictionary[i]:gmatch('([^,{}\t]+)') do
-      tmp = value:match("%s*(.*)")
-      tmp = tmp:gsub("%s*$", "")
-      table.insert(table_values, tmp)
-    end
-
-    -- Placing values in dict
-    for x = 1, #M.VALUES_FORMAT do
-      line_result[M.VALUES_FORMAT[x]] = table_values[x]
-    end
-
-    -- Placing dicts for word in one table
-    assert(line_result, "Error while parsing dictionary. Check for syntax errors in dictionary.")
-    table.insert(value_table, line_result)
-  end
-
-  return value_table
-end
 
 -- Highlights keywords from dictionary
 function M.highlight_words()
   vim.cmd(":highlight Keyword guifg=" .. M.DEFAULT_COLOUR)
 
-  for word, _ in pairs(DICTIONARY) do
+  for word, _ in pairs(DICTIONARIES) do
     vim.cmd(":syntax keyword Keyword " .. word:sub(0, -2))
   end
 end
@@ -63,18 +38,22 @@ function M.highlight_translated_words(buff_id)
       translate = sub_line:match("%[(.*)")
       translate = translate:gsub("%].*", "")
       local i = 1
-      if not DICTIONARY[word .. "_"] then
+      if not DICTIONARIES[word .. "_"] then
         print("Для слова " .. word .. "не найдено перевода в словаре")
       else
-        while DICTIONARY[word .. "_"][i] ~= nil do
-          if translate == DICTIONARY[word .. "_"][i].translate then
-            translate_colour = DICTIONARY[word .. "_"][i].colour
-            break
+        for i, v in ipairs(ALL_DICTS) do
+          if v[1][word .. "_"] ~= nil then
+            while v[1][word .. "_"][i] ~= nil do
+              if translate == v[1][word .. "_"][i].translate then
+                translate_colour = v[1][word .. "_"][i].colour
+                break
+              end
+              if v[1][word .. "_"][i].translate == nil then
+                break
+              end
+              i = i + 1
+            end
           end
-          if DICTIONARY[word .. "_"][i].translate == nil then
-            break
-          end
-          i = i + 1
         end
         vim.api.nvim_set_hl(111, "TranslateHighlight" .. COUNT, { fg = translate_colour })
         vim.api.nvim_buf_add_highlight(buff_id, 111, "TranslateHighlight" .. COUNT, line_num, index[1] - 1,
@@ -82,9 +61,9 @@ function M.highlight_translated_words(buff_id)
         vim.api.nvim_set_hl_ns(111)
 
         COUNT = COUNT + 1
+        sub_line = sub_line:sub(index[2] + 1 - index_storage, -1)
+        index_storage = index[2]
       end
-      sub_line = sub_line:sub(index[2] + 1 - index_storage, -1)
-      index_storage = index[2]
     end
   end
 
@@ -209,7 +188,7 @@ function M.draw_menu()
   local cursor_position = vim.api.nvim_win_get_cursor(shared_winid)
 
   -- Table with dicts for the word
-  local values_dicts = DICTIONARY[selected_word .. "_"]
+  local values_dicts = CURRENT_DICTIONARY[selected_word .. "_"]
 
   if values_dicts == nil then
     print("Слова <" .. selected_word .. "> нет в активном словаре.")
@@ -264,7 +243,7 @@ function M.draw_menu()
     border = {
       style = "rounded",
       text = {
-        top = selected_word,
+        top = "[" .. CURRENT_DICTIONARY_NAME .. "] " .. selected_word,
         top_align = "center",
       },
     },
@@ -348,33 +327,125 @@ function M.draw_comment()
   })
 
   local translate_num = nil
-  for i = 1, #DICTIONARY[word .. "_"] do
-    if DICTIONARY[word .. "_"][i].translate == translate then
+  if CURRENT_DICTIONARY[word .. "_"] == nil then
+    print("Данного слова нет в активном словаре.")
+    return
+  end
+  for i = 1, #CURRENT_DICTIONARY[word .. "_"] do
+    if CURRENT_DICTIONARY[word .. "_"][i].translate == translate then
       translate_num = i
       break
     end
   end
+  if translate_num == nil then
+    print("У слова нет перевода, либо задан несуществующий в активном словаре перевод.")
+    return
+  end
 
   local comment = {}
-  for i in DICTIONARY[word .. "_"][translate_num].comment:gmatch("[^%c]*") do
+  for i in CURRENT_DICTIONARY[word .. "_"][translate_num].comment:gmatch("[^%c]*") do
     if i ~= "" then
       table.insert(comment, i)
     end
   end
   vim.api.nvim_buf_set_lines(popup.bufnr, 0, -1, false,
-    { string.format("%s/%s", translate_num, #DICTIONARY[word .. "_"]),
+    { string.format("%s/%s", translate_num, #CURRENT_DICTIONARY[word .. "_"]),
       unpack(comment) })
 
   popup:map("n", { "q", "<esc>" }, function() popup:unmount() end, { noremap = true })
   popup:mount()
 end
 
+function M.draw_current_dictionary_selecter()
+  local Menu = require("nui.menu")
+
+  local function get_lines()
+    local function get_keyword_num(dict)
+      local counter = 0
+      for _, _ in pairs(dict) do
+        counter = counter + 1
+      end
+      return counter
+    end
+    local items = {}
+    for i, v in ipairs(ALL_DICTS) do
+      local item = Menu.item(v[2] .. " [" .. get_keyword_num(v[1]) .. "]", v)
+      table.insert(items, item)
+    end
+    return items
+  end
+
+  local popup_options = {
+    relative = "win",
+
+    size = {
+      width = M.CURRENT_DICTIONARY_MENU_SIZE.col,
+      height = M.CURRENT_DICTIONARY_MENU_SIZE.row,
+    },
+
+    position = {
+      row = "30%",
+      col = "30%",
+    },
+
+    border = {
+      style = "rounded",
+      text = {
+        top = "Выбор словаря",
+        top_align = "center",
+      },
+    },
+
+    win_options = {
+      winhighlight = "Normal:Normal",
+    }
+  }
+
+  local menu = Menu(popup_options, {
+    lines = get_lines(),
+    keymap = {
+      focus_next = { "j", "<Down>" },
+      focus_prev = { "k", "<Up>" },
+      close = { "<Esc>", "q" },
+      submit = { "<CR>" },
+    },
+
+    on_close = function()
+    end,
+
+    on_change = function()
+    end,
+
+    on_submit = function(item)
+      CURRENT_DICTIONARY = item[1]
+      CURRENT_DICTIONARY_NAME = item[2]
+      print(item[2])
+    end,
+  })
+  menu:mount()
+end
+
 function M.enable()
   local current_buffer = vim.api.nvim_get_current_buf()
-  DICTIONARY, DICTIONARY_NAME = require("dipl_dicts")
-  -- TODO: Hardcode is bad practice... Repair this shit
-  package.loaded["dipl_dicts.dict_2"] = nil
+  ALL_DICTS = require("dipl_dicts")
   package.loaded["dipl_dicts"] = nil
+  if #CURRENT_DICTIONARY == 0 then
+    CURRENT_DICTIONARY = ALL_DICTS[1][1]
+    CURRENT_DICTIONARY_NAME = ALL_DICTS[1][2]
+  else
+    for _, v in ipairs(ALL_DICTS) do
+      if v[2] == CURRENT_DICTIONARY_NAME then
+        CURRENT_DICTIONARY = v[1]
+      end
+    end
+  end
+
+  for _, words in ipairs(ALL_DICTS) do
+    for k, v in pairs(words[1]) do
+      DICTIONARIES[k] = v
+    end
+  end
+
   M.highlight_words()
   M.highlight_translated_words(current_buffer)
   --- MAPPINGS ---
@@ -393,6 +464,10 @@ function M.enable()
   vim.keymap.set("n", M.KEYMAP_GET_COMMENT, function()
     require("dipl").draw_comment()
   end)
+
+  vim.keymap.set('n', M.KEYMAP_SELECT_CURRENT_DICTIONARY, function()
+    require("dipl").draw_current_dictionary_selecter()
+  end)
   --- MAPPINGS END ---
 end
 
@@ -402,6 +477,7 @@ function M.disable()
   vim.keymap.del('n', M.KEYMAP_MENU)
   vim.keymap.del('n', M.KEYMAP_DELETE_TRANSLATE)
   vim.keymap.del('n', M.KEYMAP_GET_COMMENT)
+  vim.keymap.del('n', M.KEYMAP_SELECT_CURRENT_DICTIONARY)
   --- UNMAPPING END ---
   vim.cmd(":syntax off")
   vim.api.nvim_set_hl_ns(0)
@@ -414,12 +490,14 @@ function M.setup(opts)
   M.COLOUR_FOR_CHOICE = opts.COLOUR_FOR_CHOICE or "#aaa0ff"
   M.DICTS = opts.DICTS
   M.COMMENT_POPUP_SIZE = opts.COMMENT_POPUP_SIZE or { row = 10, col = 40 }
+  M.CURRENT_DICTIONARY_MENU_SIZE = opts.CURRENT_DICTIONARY_MENU_SIZE or { row = 10, col = 100 }
 
   M.KEYMAP_ENABLE_PLUGIN = opts.ENABLE_PLUGIN_KEYMAP or "<C-l>"
   M.KEYMAP_DISABLE_PLUGIN = opts.KEYMAP_DISABLE_PLUGIN or "<C-j>"
   M.KEYMAP_MENU = opts.KEYMAP_MENU or "<C-k>"
   M.KEYMAP_DELETE_TRANSLATE = opts.KEYMAP_DELETE_TRANSLATE or "<C-d>"
   M.KEYMAP_GET_COMMENT = opts.KEYMAP_GET_COMMENT or "<C-c>"
+  M.KEYMAP_SELECT_CURRENT_DICTIONARY = opts.KEYMAP_SELECT_CURRENT_DICTIONARY or "<C-a>"
   --- CONFIG END ---
 
   --- MAPPINGS ---
