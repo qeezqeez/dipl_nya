@@ -440,22 +440,14 @@ function M.enable()
   local current_buffer = vim.api.nvim_get_current_buf()
   ALL_DICTS = require("dipl_dicts")
   package.loaded["dipl_dicts"] = nil
-  if CURRENT_DICTIONARY_NAME == nil then
-    CURRENT_DICTIONARY = ALL_DICTS[1][1]
-    CURRENT_DICTIONARY_NAME = ALL_DICTS[1][2]
-  else
-    for _, v in ipairs(ALL_DICTS) do
-      if v[2] == CURRENT_DICTIONARY_NAME then
-        CURRENT_DICTIONARY = v[1]
-      end
-    end
-  end
 
   for _, words in ipairs(ALL_DICTS) do
     for k, v in pairs(words[1]) do
       DICTIONARIES[k] = v
     end
   end
+
+  CURRENT_DICTIONARY = DICTIONARIES
 
   M.highlight_words()
   M.highlight_translated_words(current_buffer)
