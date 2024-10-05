@@ -1,6 +1,5 @@
 local M = {}
 -- dictionary structure - {word = {{key, translate, colour, comment},}}
-
 local ALL_DICTS = {}          -- Contains all dicts
 local CURRENT_DICTIONARY = {} -- Dictionary used for translate
 local CURRENT_DICTIONARY_NAME = nil
@@ -294,9 +293,11 @@ function M.draw_menu()
         end
       end
       vim.api.nvim_buf_set_lines(popup.bufnr, 0, -1, false,
-        { string.format("%s/%s", item.index, #values_dicts), unpack(comment) })
+        { unpack(comment) })
       M.highlight_under_cusror(selected_word, cursor_position, shared_buffer)
       popup:mount()
+      menu.border:set_text('top',
+        "[" .. CURRENT_DICTIONARY_NAME .. "] " .. selected_word .. " " .. item.index .. "/" .. #values_dicts, "center")
     end,
 
     on_submit = function(item)
@@ -449,7 +450,13 @@ function M.enable()
 
   for _, words in ipairs(ALL_DICTS) do
     for k, v in pairs(words[1]) do
-      DICTIONARIES[k] = v
+      if DICTIONARIES[k] ~= nil then
+        for _, translate in ipairs(v) do
+          table.insert(DICTIONARIES[k], translate)
+        end
+      else
+        DICTIONARIES[k] = v
+      end
     end
   end
 
