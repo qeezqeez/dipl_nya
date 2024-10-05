@@ -12,9 +12,14 @@ local COUNT = 2
 -- Highlights keywords from dictionary
 function M.highlight_words()
   vim.cmd(":highlight Keyword guifg=" .. M.DEFAULT_COLOUR)
-
+  vim.cmd(":highlight NonActiveDictionaryWord guifg=" .. M.NON_ACTIVE_TRANSLATE_COLOUR)
   for word, _ in pairs(DICTIONARIES) do
-    vim.cmd(":syntax keyword Keyword " .. word:sub(0, -2))
+    if CURRENT_DICTIONARY[word] ~= nil then
+      vim.cmd(":syntax keyword Keyword " .. word:sub(0, -2))
+      print(word)
+    else
+      vim.cmd(":syntax keyword NonActiveDictionaryWord " .. word:sub(0, -2))
+    end
   end
 end
 
@@ -430,6 +435,7 @@ function M.draw_current_dictionary_selecter()
     on_submit = function(item)
       CURRENT_DICTIONARY = item[1]
       CURRENT_DICTIONARY_NAME = item[2]
+      M.highlight_words()
       M.highlight_translated_words(current_buffer)
     end,
   })
