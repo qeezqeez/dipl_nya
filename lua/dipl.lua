@@ -450,13 +450,7 @@ function M.enable()
 
   for _, words in ipairs(ALL_DICTS) do
     for k, v in pairs(words[1]) do
-      if DICTIONARIES[k] ~= nil then
-        for _, translate in ipairs(v) do
-          table.insert(DICTIONARIES[k], translate)
-        end
-      else
-        DICTIONARIES[k] = v
-      end
+      DICTIONARIES[k] = v
     end
   end
 
