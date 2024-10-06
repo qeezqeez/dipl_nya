@@ -1,14 +1,14 @@
 local M = {}
--- dictionary structure - {word = {{key, translate, colour, comment},}}
-local ALL_DICTS = {}          -- Contains all dicts
-local CURRENT_DICTIONARY = {} -- Dictionary used for translate
+-- Dictionary structure - {word = {{key, translate, colour, comment},}}.
+local ALL_DICTS = {}          -- Contains all dicts.
+local CURRENT_DICTIONARY = {} -- Dictionary used for translate.
 local CURRENT_DICTIONARY_NAME = nil
-local DICTIONARIES = {}       -- All used dictionaries words
+local DICTIONARIES = {}       -- All dictionaries how one.
 
--- Used for creation custom highlight groups. Please do not touch
+-- Used for creation custom highlight groups. Please do not touch.
 local COUNT = 2
 
--- Highlights keywords from dictionary
+-- Highlights keywords from dictionary.
 function M.highlight_words()
   vim.cmd(":highlight Keyword guifg=" .. M.DEFAULT_COLOUR)
   vim.cmd(":highlight NonActiveDictionaryWord guifg=" .. M.NON_ACTIVE_TRANSLATE_COLOUR)
@@ -22,34 +22,50 @@ function M.highlight_words()
   end
 end
 
--- Highlights the translated word
+-- Highlights translated words by position.
 function M.highlight_translated_words(buff_id)
   local function parse_line(line, line_num)
     local word = nil
     local translate = nil
     local translate_colour = nil
 
+    -- Index where translate construction (word)[translate] begins and ends
     local index = {} -- [1] - start, [2] - end
+    -- Part of line which not parsed yet.
     local sub_line = line
+    -- Accumulate translate position in line for accurate indexing with sub_line.
+    -- Word position takes from sub_line. Sub_line is part of whole line.
+    -- May I can use amount sub_line characters difference with line? This should
+    -- look prettier.
     local index_storage = 0
 
+    -- Check for translates in sub_line.
     while sub_line:find("%([%a]+%)%[[^%]]+(%])") do
-      -- used for indexing translate position in file
+      -- Getting start and end of translate in sub_line and adding index 
+      -- difference with line.
       index[1], index[2] = sub_line:find("%([%a]+%)%[[^%]]+(%])")
       index[1] = index[1] + index_storage
       index[2] = index[2] + index_storage
+
+      -- Get word and his translate.
       word = sub_line:match("%((%a*)%)")
-      translate = sub_line:match("%[(.*)")
-      translate = translate:gsub("%].*", "")
-      local i = 1
+      translate = sub_line:match("%[(.*)"):gsub("%].*", "")
+
+      -- Check word in dictionary
       if not CURRENT_DICTIONARY[word .. "_"] then
+        -- Highlight word with translate in colour for non active dictionary
         vim.api.nvim_set_hl(111, "TranslateHighlightDefault", { fg = M.NON_ACTIVE_TRANSLATE_COLOUR })
         vim.api.nvim_buf_add_highlight(buff_id, 111, "TranslateHighlightDefault", line_num, index[1] - 1,
           index[1] + #word + #translate + 3)
         vim.api.nvim_set_hl_ns(111)
+
+        -- Crop sub_line before highlighted part (include this part).
         sub_line = sub_line:sub(index[2] + 1 - index_storage, -1)
+        -- Add sub_line and line difference.
         index_storage = index[2]
       else
+        local i = 1 -- Index for word translate
+        -- Search translate colour in dictionary.
         while CURRENT_DICTIONARY[word .. "_"][i] ~= nil do
           if CURRENT_DICTIONARY[word .. "_"][i].translate == translate then
             translate_colour = CURRENT_DICTIONARY[word .. "_"][i].colour
@@ -58,22 +74,32 @@ function M.highlight_translated_words(buff_id)
           end
           i = i + 1
         end
+        -- Highlight translate in his colour if exist. 
         if translate_colour ~= nil then
           vim.api.nvim_set_hl(111, "TranslateHighlight" .. COUNT, { fg = translate_colour })
           vim.api.nvim_buf_add_highlight(buff_id, 111, "TranslateHighlight" .. COUNT, line_num, index[1] - 1,
             index[1] + #word + #translate + 3)
           vim.api.nvim_set_hl_ns(111)
 
+          -- Change highlight name for unique colours
           COUNT = COUNT + 1
+
+          -- Crop sub_line before highlighted part (include this part).
           sub_line = sub_line:sub(index[2] + 1 - index_storage, -1)
+          -- Add sub_line and line difference.
           index_storage = index[2]
+          -- Drop finded translate colour.
           translate_colour = nil
         else
+          -- Highlight translate in colour for non active dictionaries. 
           vim.api.nvim_set_hl(111, "TranslateHighlightDefault", { fg = M.NON_ACTIVE_TRANSLATE_COLOUR })
           vim.api.nvim_buf_add_highlight(buff_id, 111, "TranslateHighlightDefault", line_num, index[1] - 1,
             index[1] + #word + #translate + 3)
           vim.api.nvim_set_hl_ns(111)
+
+          -- Crop sub_line before highlighted part (include this part).
           sub_line = sub_line:sub(index[2] + 1 - index_storage, -1)
+          -- Add sub_line and line difference.
           index_storage = index[2]
         end
       end
