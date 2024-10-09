@@ -41,7 +41,7 @@ function M.highlight_translated_words(buff_id)
 
     -- Check for translates in sub_line.
     while sub_line:find("%([%a]+%)%[[^%]]+(%])") do
-      -- Getting start and end of translate in sub_line and adding index 
+      -- Getting start and end of translate in sub_line and adding index
       -- difference with line.
       index[1], index[2] = sub_line:find("%([%a]+%)%[[^%]]+(%])")
       index[1] = index[1] + index_storage
@@ -74,7 +74,7 @@ function M.highlight_translated_words(buff_id)
           end
           i = i + 1
         end
-        -- Highlight translate in his colour if exist. 
+        -- Highlight translate in his colour if exist.
         if translate_colour ~= nil then
           vim.api.nvim_set_hl(111, "TranslateHighlight" .. COUNT, { fg = translate_colour })
           vim.api.nvim_buf_add_highlight(buff_id, 111, "TranslateHighlight" .. COUNT, line_num, index[1] - 1,
@@ -91,7 +91,7 @@ function M.highlight_translated_words(buff_id)
           -- Drop finded translate colour.
           translate_colour = nil
         else
-          -- Highlight translate in colour for non active dictionaries. 
+          -- Highlight translate in colour for non active dictionaries.
           vim.api.nvim_set_hl(111, "TranslateHighlightDefault", { fg = M.NON_ACTIVE_TRANSLATE_COLOUR })
           vim.api.nvim_buf_add_highlight(buff_id, 111, "TranslateHighlightDefault", line_num, index[1] - 1,
             index[1] + #word + #translate + 3)
@@ -219,6 +219,12 @@ end
 
 -- Drawing window with translate variants
 function M.draw_menu()
+  -- Check current dictionary. If choosed no one - return none.
+  if CURRENT_DICTIONARY_NAME == nil then
+    print("Вы не выбрали активный словарь.")
+    return
+  end
+
   -- Winid for create menu and popup in one window
   local shared_winid = vim.api.nvim_get_current_win()
   local shared_buffer = vim.api.nvim_get_current_buf()
