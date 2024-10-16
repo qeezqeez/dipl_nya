@@ -15,7 +15,6 @@ function M.highlight_words()
   for word, _ in pairs(DICTIONARIES) do
     if CURRENT_DICTIONARY[word] ~= nil then
       vim.cmd(":syntax keyword Keyword " .. word:sub(0, -2))
-      print(word)
     else
       vim.cmd(":syntax keyword NonActiveDictionaryWord " .. word:sub(0, -2))
     end
