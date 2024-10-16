@@ -440,7 +440,7 @@ function M.draw_current_dictionary_selecter()
     border = {
       style = "rounded",
       text = {
-        top = "Выбор словаря",
+        top = CURRENT_DICTIONARY_NAME or "Выбор словаря",
         top_align = "center",
       },
     },
@@ -496,6 +496,7 @@ function M.enable()
   end
 
   CURRENT_DICTIONARY = DICTIONARIES
+  CURRENT_DICTIONARY_NAME = nil
 
   M.highlight_words()
   M.highlight_translated_words(current_buffer)
