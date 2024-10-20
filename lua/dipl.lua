@@ -437,6 +437,8 @@ function M.draw_current_dictionary_selecter()
 
       table.insert(items, item)
     end
+    -- Arrange dictionaries in alphabetical order
+    table.sort(items, function(a, b) return a[2] < b[2] end)
     return items
   end
 
