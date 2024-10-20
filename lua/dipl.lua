@@ -354,8 +354,8 @@ function M.draw_comment()
   local Popup = require("nui.popup")
   local popup = Popup({
     position = {
-      row = "40%",
-      col = "40%"
+      row = M.COMMENT_POPUP_POSITION.row,
+      col = M.COMMENT_POPUP_POSITION.col,
     },
     relative = "editor",
     size = {
@@ -443,8 +443,8 @@ function M.draw_current_dictionary_selecter()
     },
 
     position = {
-      row = "30%",
-      col = "30%",
+      row = M.CURRENT_DICTIONARY_MENU_POSITION.row,
+      col = M.CURRENT_DICTIONARY_MENU_POSITION.col,
     },
 
     border = {
@@ -553,7 +553,9 @@ function M.setup(opts)
   M.COLOUR_FOR_CHOICE = opts.COLOUR_FOR_CHOICE or "#aaa0ff"
   M.DICTS = opts.DICTS
   M.COMMENT_POPUP_SIZE = opts.COMMENT_POPUP_SIZE or { row = 10, col = 40 }
+  M.COMMENT_POPUP_POSITION = opts.COMMENT_POPUP_POSITION or { row = 15, col = 70 }
   M.CURRENT_DICTIONARY_MENU_SIZE = opts.CURRENT_DICTIONARY_MENU_SIZE or { row = 10, col = 100 }
+  M.CURRENT_DICTIONARY_MENU_POSITION = opts.CURRENT_DICTIONARY_MENU_POSITION or { row = 15, col = 70 }
 
   M.KEYMAP_ENABLE_PLUGIN = opts.ENABLE_PLUGIN_KEYMAP or "<C-l>"
   M.KEYMAP_DISABLE_PLUGIN = opts.KEYMAP_DISABLE_PLUGIN or "<C-j>"
