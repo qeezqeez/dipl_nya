@@ -1,6 +1,7 @@
 local M = {}
 -- Dictionary structure - {word = {{key, translate, colour, comment},}}.
 local ALL_DICTS = {}          -- Contains all dicts.
+local ALL_WORDS = {}          -- Contains all words with translate
 local CURRENT_DICTIONARY = {} -- Dictionary used for translate.
 local CURRENT_DICTIONARY_NAME = nil
 local DICTIONARIES = {}       -- All dictionaries how one.
@@ -404,6 +405,7 @@ function M.draw_comment()
 end
 
 function M.draw_current_dictionary_selecter()
+  local word = vim.fn.expand("<cword>")
   local Menu = require("nui.menu")
   local current_buffer = vim.api.nvim_get_current_buf()
 
@@ -418,15 +420,19 @@ function M.draw_current_dictionary_selecter()
     local items = {}
     for i, v in ipairs(ALL_DICTS) do
       local item = nil
+      local consist_word = "" -- Mark word existence in dictionary
+      if v[1][word .. "_"] ~= nil then
+        consist_word = M.MARK_WORD_EXISTENCE
+      end
       -- Check highlight colour for dictionary name.
       if v[3] ~= nil then
         local NuiLine = require("nui.line")
         local line = NuiLine()
         vim.cmd(":highlight " .. "dict_colour" .. i .. " guifg=" .. v[3])
-        line:append(v[2] .. " [" .. get_keyword_num(v[1]) .. "]", "dict_colour" .. i)
+        line:append(v[2] .. " [" .. get_keyword_num(v[1]) .. "] " .. consist_word, "dict_colour" .. i)
         item = Menu.item(line, v)
       else
-        item = Menu.item(v[2] .. " [" .. get_keyword_num(v[1]) .. "]", v)
+        item = Menu.item(v[2] .. " [" .. get_keyword_num(v[1]) .. "] " .. consist_word, v)
       end
 
       table.insert(items, item)
@@ -504,6 +510,7 @@ function M.enable()
       end
     end
   end
+  ALL_WORDS = DICTIONARIES
 
   CURRENT_DICTIONARY = {}
   CURRENT_DICTIONARY_NAME = nil
@@ -556,6 +563,7 @@ function M.setup(opts)
   M.COMMENT_POPUP_POSITION = opts.COMMENT_POPUP_POSITION or { row = 15, col = 70 }
   M.CURRENT_DICTIONARY_MENU_SIZE = opts.CURRENT_DICTIONARY_MENU_SIZE or { row = 10, col = 100 }
   M.CURRENT_DICTIONARY_MENU_POSITION = opts.CURRENT_DICTIONARY_MENU_POSITION or { row = 15, col = 70 }
+  M.MARK_WORD_EXISTENCE = opts.MARK_WORD_EXISTENCE or "✓"
 
   M.KEYMAP_ENABLE_PLUGIN = opts.ENABLE_PLUGIN_KEYMAP or "<C-l>"
   M.KEYMAP_DISABLE_PLUGIN = opts.KEYMAP_DISABLE_PLUGIN or "<C-j>"
