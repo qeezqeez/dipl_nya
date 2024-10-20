@@ -416,8 +416,19 @@ function M.draw_current_dictionary_selecter()
       return counter
     end
     local items = {}
-    for _, v in ipairs(ALL_DICTS) do
-      local item = Menu.item(v[2] .. " [" .. get_keyword_num(v[1]) .. "]", v)
+    for i, v in ipairs(ALL_DICTS) do
+      local item = nil
+      -- Check highlight colour for dictionary name.
+      if v[3] ~= nil then
+        local NuiLine = require("nui.line")
+        local line = NuiLine()
+        vim.cmd(":highlight " .. "dict_colour" .. i .. " guifg=" .. v[3])
+        line:append(v[2] .. " [" .. get_keyword_num(v[1]) .. "]", "dict_colour" .. i)
+        item = Menu.item(line, v)
+      else
+        item = Menu.item(v[2] .. " [" .. get_keyword_num(v[1]) .. "]", v)
+      end
+
       table.insert(items, item)
     end
     return items
