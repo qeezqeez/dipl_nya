@@ -514,7 +514,7 @@ function M.enable()
   end
   ALL_WORDS = DICTIONARIES
 
-  CURRENT_DICTIONARY = {}
+  CURRENT_DICTIONARY = DICTIONARIES
   CURRENT_DICTIONARY_NAME = nil
 
   M.highlight_words()
