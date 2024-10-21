@@ -1,7 +1,6 @@
 local M = {}
 -- Dictionary structure - {word = {{key, translate, colour, comment},}}.
 local ALL_DICTS = {}          -- Contains all dicts.
-local ALL_WORDS = {}          -- Contains all words with translate
 local CURRENT_DICTIONARY = {} -- Dictionary used for translate.
 local CURRENT_DICTIONARY_NAME = nil
 local DICTIONARIES = {}       -- All dictionaries how one.
@@ -9,7 +8,7 @@ local DICTIONARIES = {}       -- All dictionaries how one.
 -- Used for creation custom highlight groups. Please do not touch.
 local COUNT = 2
 
--- Highlights keywords from dictionary.
+-- Highlights non translated in text keywords from dictionary.
 function M.highlight_words()
   vim.cmd(":highlight Keyword guifg=" .. M.DEFAULT_COLOUR)
   vim.cmd(":highlight NonActiveDictionaryWord guifg=" .. M.NON_ACTIVE_TRANSLATE_COLOUR)
@@ -23,7 +22,10 @@ function M.highlight_words()
 end
 
 -- Highlights translated words by position.
+-- "111" choosed how default namespace id. Should I put this num in named variable?
+-- This looks better then magic number in code.
 function M.highlight_translated_words(buff_id)
+  -- Highlights words by line, but should know number of line in buffer.
   local function parse_line(line, line_num)
     local word = nil
     local translate = nil
@@ -105,12 +107,11 @@ function M.highlight_translated_words(buff_id)
       end
     end
   end
-
+  -- Count text lines in buffer.
   local lines_amount = vim.api.nvim_buf_line_count(buff_id)
-  local line = nil
   vim.api.nvim_buf_clear_namespace(buff_id, 111, 0, -1)
   for index = 0, lines_amount - 1 do
-    line = vim.api.nvim_buf_get_lines(buff_id, index, index + 1, false)[1]
+    local line = vim.api.nvim_buf_get_lines(buff_id, index, index + 1, false)[1]
     parse_line(line, index)
   end
 end
@@ -185,7 +186,7 @@ function M.delete_translated_word()
 end
 
 -- Return completed comment popup for menu
-function M.get_comment_popup(comment, winid)
+function M.get_comment_popup(winid)
   local Popup = require("nui.popup")
 
   local popup = Popup({
@@ -242,7 +243,7 @@ function M.draw_menu()
   end
 
   --- Popup for comment
-  local popup = M.get_comment_popup("", shared_winid)
+  local popup = M.get_comment_popup(shared_winid)
 
   -- Menu constructor
   local Menu = require("nui.menu")
@@ -512,7 +513,6 @@ function M.enable()
       end
     end
   end
-  ALL_WORDS = DICTIONARIES
 
   CURRENT_DICTIONARY = DICTIONARIES
   CURRENT_DICTIONARY_NAME = nil
