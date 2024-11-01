@@ -50,8 +50,8 @@ function M.highlight_translated_words(buff_id)
       index[2] = index[2] + index_storage
 
       -- Get word and his translate.
-      word = sub_line:sub(index[1]):match("%[(%a*)%]")
-      translate = sub_line:sub(index[1]):match("%((.*)"):gsub("%).*", "")
+      word = sub_line:sub(index[1] - index_storage):match("%[(%a*)%]")
+      translate = sub_line:sub(index[1] - index_storage):match("%((.*)"):gsub("%).*", "")
 
       -- Check word in dictionary
       if not CURRENT_DICTIONARY[word .. "_"] then
@@ -159,11 +159,11 @@ function M.translate_word(translate_item, word_pos, line, buff_id, word)
   local translated_line = nil
   local sub_start = line_to_translate:sub(1, word_pos.word_start)
   local sub_end = line_to_translate:sub(word_pos.word_end + 1, -1)
-  if sub_end:sub(1, 2) == ")[" then
+  if sub_end:sub(1, 2) == "](" then
     sub_start = sub_start:sub(1, -2)
-    sub_end = sub_end:match("%](.*)")
+    sub_end = sub_end:match("%)(.*)")
   end
-  translated_line = sub_start .. "(" .. word .. ")[" .. translate_item.translate .. "]" .. sub_end
+  translated_line = sub_start .. "[" .. word .. "](" .. translate_item.translate .. ")" .. sub_end
 
   vim.api.nvim_buf_set_lines(buff_id, line - 1, line, false, { translated_line })
 end
@@ -177,8 +177,8 @@ function M.delete_translated_word()
 
   local line = vim.api.nvim_buf_get_lines(buff_id, line_number - 1, line_number, false)[1]
 
-  local sub_start = line:sub(1, cursor_position[2]):match("(.*)%(")
-  local sub_end = line:sub(cursor_position[2], -1):match("%](.*)")
+  local sub_start = line:sub(1, cursor_position[2]):match("(.*)%[")
+  local sub_end = line:sub(cursor_position[2], -1):match("%)(.*)")
   line = sub_start .. word .. sub_end
 
   vim.api.nvim_buf_set_lines(buff_id, line_number - 1, line_number, false, { line })
