@@ -42,16 +42,16 @@ function M.highlight_translated_words(buff_id)
     local index_storage = 0
 
     -- Check for translates in sub_line.
-    while sub_line:find("%([%a]+%)%[[^%]]+(%])") do
+    while sub_line:find("%[[%a]+%]%([^%)]+(%))") do
       -- Getting start and end of translate in sub_line and adding index
       -- difference with line.
-      index[1], index[2] = sub_line:find("%([%a]+%)%[[^%]]+(%])")
+      index[1], index[2] = sub_line:find("%[[%a]+%]%([^%)]+(%))")
       index[1] = index[1] + index_storage
       index[2] = index[2] + index_storage
 
       -- Get word and his translate.
-      word = sub_line:match("%((%a*)%)")
-      translate = sub_line:match("%[(.*)"):gsub("%].*", "")
+      word = sub_line:sub(index[1]):match("%[(%a*)%]")
+      translate = sub_line:sub(index[1]):match("%((.*)"):gsub("%).*", "")
 
       -- Check word in dictionary
       if not CURRENT_DICTIONARY[word .. "_"] then
