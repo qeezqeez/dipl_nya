@@ -12,7 +12,7 @@ add({ source = "MunifTanjim/nui.nvim"})
 require("dipl").setup {
   DEFAULT_COLOUR = "#ffffff", // цвет для слов с наличием перевода
   COLOUR_FOR_CHOICE = "#ffffff", // цвет фона для слова, когда вы выбираете перевод
-  KEYMAP_ENABLE_PLUGIN = "<C-l>",
+  KEYMAP_ENABLE_PLUGIN = "<C-l>",  // кеймап для включения плагина
 }
 ```
 
