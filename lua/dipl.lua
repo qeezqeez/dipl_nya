@@ -8,6 +8,20 @@ local DICTIONARIES = {}       -- All dictionaries how one.
 -- Used for creation custom highlight groups. Please do not touch.
 local COUNT = 2
 
+
+---@param word string -- Word in dictionary without formatting.
+---@return string -- Word how it look in text
+function M.get_text_word(word)
+  word, _ = word:gsub("_", " ")
+  return word:sub(0, -2)
+end
+
+---@param word string -- Word how it look in text.
+---@return string -- -- Word how it look in dictionary.
+function M.get_dictionary_word(word)
+  return word:gsub(" ", "_") .. "_"
+end
+
 -- Highlights non translated in text keywords from dictionary.
 function M.highlight_words()
   vim.cmd(":highlight Keyword guifg=" .. M.DEFAULT_COLOUR)
