@@ -351,7 +351,7 @@ function M.draw_comment()
   local cursor = vim.api.nvim_win_get_cursor(winid)
 
   local line = vim.api.nvim_get_current_line()
-  local translate = line:sub(cursor[2], -1):match("%[([^%]]*)")
+  local translate = line:sub(cursor[2], -1):match("%(([^%)]*)")
 
   local Popup = require("nui.popup")
   local popup = Popup({
