@@ -25,9 +25,38 @@ end
 
 ---@param cursor_pos table -- {line, column}.
 ---@param buff_id integer -- Buffer id.
--- Search word near cursor in dictionary.
+---@return string
+-- Search words near cursor in dictionary.
 function M.get_word_for_translate(cursor_pos, buff_id)
+  local win_id = vim.api.nvim_get_current_win()
+  local word_under_cursor = vim.fn.expand("<cword>")
+  local _word = word_under_cursor
 
+  if CURRENT_DICTIONARY[M.get_dictionary_word(word_under_cursor)] ~= nil then
+    return word_under_cursor
+  end
+
+  local word_under_cursor_pos = M.get_word_position(word_under_cursor, cursor_pos, buff_id)
+  local words_before = ""
+  for i = 1, 2, 1 do
+    vim.fn.cursor(cursor_pos[1], word_under_cursor_pos[1] - 2)
+    words_before = vim.fn.expand("<cword>") .. words_before
+    if CURRENT_DICTIONARY[M.get_dictionary_word(words_before .. _word)] ~= nil then
+      return words_before .. _word
+    end
+  end
+
+  vim.fn.cursor({ cursor_pos[1], cursor_pos[2] })
+  local words_after = ""
+  for i = 1, 2, 1 do
+    vim.fn.cursor({ cursor_pos[1], word_under_cursor_pos[2] + 2 })
+    words_after = words_after .. vim.fn.expand("<cword>")
+    if CURRENT_DICTIONARY[M.get_dictionary_word(_word .. words_after)] ~= nil then
+      return _word .. words_after
+    end
+  end
+  vim.fn.cursor(cursor_pos)
+  return ""
 end
 
 -- Highlights non translated in text keywords from dictionary.
@@ -36,9 +65,9 @@ function M.highlight_words()
   vim.cmd(":highlight NonActiveDictionaryWord guifg=" .. M.NON_ACTIVE_TRANSLATE_COLOUR)
   for word, _ in pairs(DICTIONARIES) do
     if CURRENT_DICTIONARY[word] ~= nil then
-      vim.cmd(":syntax keyword Keyword " .. word:sub(0, -2))
+      vim.cmd(":syntax keyword Keyword " .. M.get_text_word(word))
     else
-      vim.cmd(":syntax keyword NonActiveDictionaryWord " .. word:sub(0, -2))
+      vim.cmd(":syntax keyword NonActiveDictionaryWord " .. M.get_text_word(word))
     end
   end
 end
@@ -138,31 +167,31 @@ function M.highlight_translated_words(buff_id)
   end
 end
 
----@param word string -- Word in text
----@param cursor_pos table -- cursor_pos[[1]] = line (one-based), cursor_pos[[2]] = row (zero-based)
----@return table -- {word_start, word_end}
--- Return word position where word_start include character and word_end exclude character
+---@param word string -- Word in text.
+---@param cursor_pos table -- cursor_pos[[1]] = line (one-based), cursor_pos[[2]] = row (zero-based).
+---@return table -- {word_start, word_end}.
+-- Return word position where word_start include character and word_end exclude character.
 function M.get_word_position(word, cursor_pos, buff_id)
   local cursor_row = cursor_pos[1] -- one-based
   local cursor_col = cursor_pos[2] -- zero-based
 
   local current_string = vim.api.nvim_buf_get_lines(buff_id, cursor_row - 1, cursor_row, false)[1]
   local word_substring = nil
-  local word_pos = nil
+  local word_pos = {}
 
   if cursor_col < #word then
     word_substring = current_string:sub(0, #word + cursor_col)
-    word_pos = word_substring:find(word) - 1
+    word_pos[1], word_pos[2] = word_substring:find(word)
   else
-    word_substring = current_string:sub(cursor_col - (#word - 2), cursor_col + #word)
-    word_pos = word_substring:find(word) - #word + cursor_col
+    word_substring = current_string:sub(cursor_col - #word, cursor_col + #word)
+    word_pos[1], word_pos[2] = word_substring:find(word)
   end
-  return { word_start = word_pos, word_end = word_pos + #word }
+  return { word_pos[1] - 1, word_pos[2] - 1 }
 end
 
----@param cursor_pos table -- cursor_pos[[1]] = line (one-based), cursor_pos[[2]] = row (zero-based)
----@param word string -- Word for translate
--- Highlights word under cursos while menu is open
+---@param cursor_pos table -- cursor_pos[[1]] = line (one-based), cursor_pos[[2]] = row (zero-based).
+---@param word string -- Word for translate.
+-- Highlights word under cursos while menu is open.
 function M.highlight_under_cusror(word, cursor_pos, buff_id)
   local word_pos = M.get_word_position(word, cursor_pos, buff_id)
   vim.api.nvim_set_hl(1, "MyHighlight", { bg = M.COLOUR_FOR_CHOICE })
@@ -193,11 +222,15 @@ end
 function M.delete_translated_word()
   local buff_id = vim.api.nvim_get_current_buf()
   local win_id = vim.api.nvim_get_current_win()
-  local cursor_position = vim.api.nvim_win_get_cursor(win_id)
-  local line_number = vim.api.nvim_win_get_cursor(win_id)[1]
-  local word = vim.fn.expand("<cword>")
 
+  local cursor_position = vim.api.nvim_win_get_cursor(win_id)
+
+  local line_number = vim.api.nvim_win_get_cursor(win_id)[1]
   local line = vim.api.nvim_buf_get_lines(buff_id, line_number - 1, line_number, false)[1]
+
+  local word = line:sub(0, cursor_position[2]):match("[^%[]*$")
+      .. line:sub(cursor_position[2] + 1, -1):match("[^%]]*")
+
 
   local sub_start = line:sub(1, cursor_position[2]):match("(.*)%[")
   local sub_end = line:sub(cursor_position[2], -1):match("%)(.*)")
@@ -253,11 +286,12 @@ function M.draw_menu()
   local shared_buffer = vim.api.nvim_get_current_buf()
 
   -- Word under cursos
-  local selected_word = vim.fn.expand("<cword>")
-  local cursor_position = vim.api.nvim_win_get_cursor(shared_winid)
+  local cursor_position = { vim.fn.getcurpos(shared_winid)[2], vim.fn.getcurpos(shared_winid)[3] }
+  print(cursor_position[1], cursor_position[2])
+  local selected_word = M.get_word_for_translate(cursor_position, shared_buffer)
 
   -- Table with dicts for the word
-  local values_dicts = CURRENT_DICTIONARY[selected_word .. "_"]
+  local values_dicts = CURRENT_DICTIONARY[M.get_dictionary_word(selected_word)]
 
   if values_dicts == nil then
     print("Слова <" .. selected_word .. "> нет в активном словаре.")
@@ -367,10 +401,10 @@ function M.draw_menu()
 end
 
 function M.draw_comment()
-  local word = vim.fn.expand("<cword>")
-
   local winid = vim.api.nvim_get_current_win()
   local cursor = vim.api.nvim_win_get_cursor(winid)
+
+  local word = M.get_word_for_translate(cursor, vim.api.nvim_get_current_buf())
 
   local line = vim.api.nvim_get_current_line()
   local translate = line:sub(cursor[2], -1):match("%[([^%]]*)")
@@ -398,12 +432,12 @@ function M.draw_comment()
   })
 
   local translate_num = nil
-  if CURRENT_DICTIONARY[word .. "_"] == nil then
+  if CURRENT_DICTIONARY[M.get_dictionary_word(word)] == nil then
     print("Данного слова нет в активном словаре.")
     return
   end
-  for i = 1, #CURRENT_DICTIONARY[word .. "_"] do
-    if CURRENT_DICTIONARY[word .. "_"][i].translate == translate then
+  for i = 1, #CURRENT_DICTIONARY[M.get_dictionary_word(word)] do
+    if CURRENT_DICTIONARY[M.get_dictionary_word(word)][i].translate == translate then
       translate_num = i
       break
     end
@@ -414,13 +448,13 @@ function M.draw_comment()
   end
 
   local comment = {}
-  for i in CURRENT_DICTIONARY[word .. "_"][translate_num].comment:gmatch("[^%c]*") do
+  for i in CURRENT_DICTIONARY[M.get_dictionary_word(word)][translate_num].comment:gmatch("[^%c]*") do
     if i ~= "" then
       table.insert(comment, i)
     end
   end
   vim.api.nvim_buf_set_lines(popup.bufnr, 0, -1, false,
-    { string.format("%s/%s", translate_num, #CURRENT_DICTIONARY[word .. "_"]),
+    { string.format("%s/%s", translate_num, #CURRENT_DICTIONARY[M.get_dictionary_word(word)]),
       unpack(comment) })
 
   popup:map("n", { "q", "<esc>" }, function() popup:unmount() end, { noremap = true })
@@ -428,9 +462,12 @@ function M.draw_comment()
 end
 
 function M.draw_current_dictionary_selecter()
-  local word = vim.fn.expand("<cword>")
-  local Menu = require("nui.menu")
+  local win_id = vim.api.nvim_get_current_win()
   local current_buffer = vim.api.nvim_get_current_buf()
+
+  local word = M.get_word_for_translate(vim.api.nvim_win_get_cursor(win_id), current_buffer)
+
+  local Menu = require("nui.menu")
 
   local function get_lines()
     local function get_keyword_num(dict)
@@ -444,7 +481,7 @@ function M.draw_current_dictionary_selecter()
     for i, v in ipairs(ALL_DICTS) do
       local item = nil
       local consist_word = "" -- Mark word existence in dictionary
-      if v[1][word .. "_"] ~= nil then
+      if v[1][M.get_dictionary_word(word)] ~= nil then
         consist_word = M.MARK_WORD_EXISTENCE
       end
       -- Check highlight colour for dictionary name.
