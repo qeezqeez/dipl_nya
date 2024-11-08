@@ -19,7 +19,15 @@ end
 ---@param word string -- Word how it look in text.
 ---@return string -- -- Word how it look in dictionary.
 function M.get_dictionary_word(word)
-  return word:gsub(" ", "_") .. "_"
+  word, _ = word:gsub(" ", "_")
+  return word .. "_"
+end
+
+---@param cursor_pos table -- {line, column}.
+---@param buff_id integer -- Buffer id.
+-- Search word near cursor in dictionary.
+function M.get_word_for_translate(cursor_pos, buff_id)
+
 end
 
 -- Highlights non translated in text keywords from dictionary.
@@ -56,19 +64,19 @@ function M.highlight_translated_words(buff_id)
     local index_storage = 0
 
     -- Check for translates in sub_line.
-    while sub_line:find("%[[%a]+%]%([^%)]+(%))") do
+    while sub_line:find("%[[%a%s]+%]%([^%)]+(%))") do
       -- Getting start and end of translate in sub_line and adding index
       -- difference with line.
-      index[1], index[2] = sub_line:find("%[[%a]+%]%([^%)]+(%))")
+      index[1], index[2] = sub_line:find("%[[%a%s]+%]%([^%)]+(%))")
       index[1] = index[1] + index_storage
       index[2] = index[2] + index_storage
 
       -- Get word and his translate.
-      word = sub_line:sub(index[1] - index_storage):match("%[(%a*)%]")
+      word = sub_line:sub(index[1] - index_storage):match("%[([%a%s]+)%]")
       translate = sub_line:sub(index[1] - index_storage):match("%((.*)"):gsub("%).*", "")
 
       -- Check word in dictionary
-      if not CURRENT_DICTIONARY[word .. "_"] then
+      if not CURRENT_DICTIONARY[M.get_dictionary_word(word)] then
         -- Highlight word with translate in colour for non active dictionary
         vim.api.nvim_set_hl(111, "TranslateHighlightDefault", { fg = M.NON_ACTIVE_TRANSLATE_COLOUR })
         vim.api.nvim_buf_add_highlight(buff_id, 111, "TranslateHighlightDefault", line_num, index[1] - 1,
@@ -82,9 +90,9 @@ function M.highlight_translated_words(buff_id)
       else
         local i = 1 -- Index for word translate
         -- Search translate colour in dictionary.
-        while CURRENT_DICTIONARY[word .. "_"][i] ~= nil do
-          if CURRENT_DICTIONARY[word .. "_"][i].translate == translate then
-            translate_colour = CURRENT_DICTIONARY[word .. "_"][i].colour
+        while CURRENT_DICTIONARY[M.get_dictionary_word(word)][i] ~= nil do
+          if CURRENT_DICTIONARY[M.get_dictionary_word(word)][i].translate == translate then
+            translate_colour = CURRENT_DICTIONARY[M.get_dictionary_word(word)][i].colour
             i = 1
             break
           end
@@ -164,8 +172,8 @@ function M.highlight_under_cusror(word, cursor_pos, buff_id)
   -- I do not know how it works. I need refactor this by start, but no time to this.
 end
 
----@param translate_item NuiTree.Node -- Consist word and translate for word
----@param word_pos table {word_start, word_end}
+---@param translate_item NuiTree.Node -- Consist word and translate for word.
+---@param word_pos table {word_start, word_end}.
 -- Insert in text word translate
 function M.translate_word(translate_item, word_pos, line, buff_id, word)
   local line_to_translate = vim.api.nvim_buf_get_lines(buff_id, line - 1, line, false)[1]
