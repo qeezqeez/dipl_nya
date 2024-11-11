@@ -42,6 +42,7 @@ function M.get_word_for_translate(cursor_pos, buff_id)
     vim.fn.cursor(cursor_pos[1], word_under_cursor_pos[1] - 2)
     words_before = vim.fn.expand("<cword>") .. words_before
     if CURRENT_DICTIONARY[M.get_dictionary_word(words_before .. _word)] ~= nil then
+      print(words_before .. _word)
       return words_before .. _word
     end
   end
@@ -52,10 +53,12 @@ function M.get_word_for_translate(cursor_pos, buff_id)
     vim.fn.cursor({ cursor_pos[1], word_under_cursor_pos[2] + 2 })
     words_after = words_after .. vim.fn.expand("<cword>")
     if CURRENT_DICTIONARY[M.get_dictionary_word(_word .. words_after)] ~= nil then
+      print(_word .. words_after)
       return _word .. words_after
     end
   end
   vim.fn.cursor(cursor_pos)
+  print("Слова не найдено.")
   return ""
 end
 
@@ -180,13 +183,13 @@ function M.get_word_position(word, cursor_pos, buff_id)
   local word_pos = {}
 
   if cursor_col < #word then
-    word_substring = current_string:sub(0, #word + cursor_col)
+    word_substring = current_string:sub(0, #word)
     word_pos[1], word_pos[2] = word_substring:find(word)
   else
     word_substring = current_string:sub(cursor_col - #word, cursor_col + #word)
     word_pos[1], word_pos[2] = word_substring:find(word)
   end
-  return { word_pos[1] - 1, word_pos[2] - 1 }
+  return { word_start = word_pos[1] + cursor_col - #word - 2, word_end = word_pos[2] + cursor_col - #word }
 end
 
 ---@param cursor_pos table -- cursor_pos[[1]] = line (one-based), cursor_pos[[2]] = row (zero-based).
@@ -207,14 +210,13 @@ end
 function M.translate_word(translate_item, word_pos, line, buff_id, word)
   local line_to_translate = vim.api.nvim_buf_get_lines(buff_id, line - 1, line, false)[1]
 
-  local translated_line = nil
   local sub_start = line_to_translate:sub(1, word_pos.word_start)
-  local sub_end = line_to_translate:sub(word_pos.word_end + 1, -1)
+  local sub_end = line_to_translate:sub(word_pos.word_end, -1)
   if sub_end:sub(1, 2) == "](" then
     sub_start = sub_start:sub(1, -2)
     sub_end = sub_end:match("%)(.*)")
   end
-  translated_line = sub_start .. "[" .. word .. "](" .. translate_item.translate .. ")" .. sub_end
+  local translated_line = sub_start .. "[" .. word .. "](" .. translate_item.translate .. ")" .. sub_end
 
   vim.api.nvim_buf_set_lines(buff_id, line - 1, line, false, { translated_line })
 end
@@ -281,16 +283,16 @@ function M.draw_menu()
     return
   end
 
-  -- Winid for create menu and popup in one window
+  -- Winid for create menu and popup in one window.
   local shared_winid = vim.api.nvim_get_current_win()
   local shared_buffer = vim.api.nvim_get_current_buf()
 
-  -- Word under cursos
+  -- Word under cursos.
   local cursor_position = { vim.fn.getcurpos(shared_winid)[2], vim.fn.getcurpos(shared_winid)[3] }
   print(cursor_position[1], cursor_position[2])
   local selected_word = M.get_word_for_translate(cursor_position, shared_buffer)
 
-  -- Table with dicts for the word
+  -- Table with dicts for the word.
   local values_dicts = CURRENT_DICTIONARY[M.get_dictionary_word(selected_word)]
 
   if values_dicts == nil then
@@ -465,7 +467,7 @@ function M.draw_current_dictionary_selecter()
   local win_id = vim.api.nvim_get_current_win()
   local current_buffer = vim.api.nvim_get_current_buf()
 
-  local word = M.get_word_for_translate(vim.api.nvim_win_get_cursor(win_id), current_buffer)
+  local word = M.get_word_for_translate({ vim.fn.getcurpos(win_id)[2], vim.fn.getcurpos(win_id)[3] }, current_buffer)
 
   local Menu = require("nui.menu")
 
