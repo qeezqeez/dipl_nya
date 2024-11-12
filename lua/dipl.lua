@@ -39,10 +39,9 @@ function M.get_word_for_translate(cursor_pos, buff_id)
   local word_under_cursor_pos = M.get_word_position(word_under_cursor, cursor_pos, buff_id)
   local words_before = ""
   for i = 1, 2, 1 do
-    vim.fn.cursor(cursor_pos[1], word_under_cursor_pos[1] - 2)
-    words_before = vim.fn.expand("<cword>") .. words_before
+    vim.fn.cursor(cursor_pos[1], word_under_cursor_pos.word_start - 2)
+    words_before = vim.fn.expand("<cword>") .. " " .. words_before
     if CURRENT_DICTIONARY[M.get_dictionary_word(words_before .. _word)] ~= nil then
-      print(words_before .. _word)
       return words_before .. _word
     end
   end
@@ -50,10 +49,9 @@ function M.get_word_for_translate(cursor_pos, buff_id)
   vim.fn.cursor({ cursor_pos[1], cursor_pos[2] })
   local words_after = ""
   for i = 1, 2, 1 do
-    vim.fn.cursor({ cursor_pos[1], word_under_cursor_pos[2] + 2 })
-    words_after = words_after .. vim.fn.expand("<cword>")
+    vim.fn.cursor({ cursor_pos[1], word_under_cursor_pos.word_end + 2 })
+    words_after = words_after .. " " .. vim.fn.expand("<cword>")
     if CURRENT_DICTIONARY[M.get_dictionary_word(_word .. words_after)] ~= nil then
-      print(_word .. words_after)
       return _word .. words_after
     end
   end
@@ -289,7 +287,6 @@ function M.draw_menu()
 
   -- Word under cursos.
   local cursor_position = { vim.fn.getcurpos(shared_winid)[2], vim.fn.getcurpos(shared_winid)[3] }
-  print(cursor_position[1], cursor_position[2])
   local selected_word = M.get_word_for_translate(cursor_position, shared_buffer)
 
   -- Table with dicts for the word.
@@ -403,13 +400,13 @@ function M.draw_menu()
 end
 
 function M.draw_comment()
-  local winid = vim.api.nvim_get_current_win()
-  local cursor = vim.api.nvim_win_get_cursor(winid)
+  local win_id = vim.api.nvim_get_current_win()
+  local cursor = { vim.fn.getcurpos(win_id)[2], vim.fn.getcurpos(win_id)[3] }
 
   local word = M.get_word_for_translate(cursor, vim.api.nvim_get_current_buf())
 
-  local line = vim.api.nvim_get_current_line()
-  local translate = line:sub(cursor[2], -1):match("%[([^%]]*)")
+  local line = vim.fn.getline(cursor[1])
+  local translate = line:sub(cursor[2], -1):match("%(([^%)]*)")
 
   local Popup = require("nui.popup")
   local popup = Popup({
