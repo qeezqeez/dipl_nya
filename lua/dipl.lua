@@ -205,7 +205,7 @@ function M.get_word_position(word, cursor_pos, buff_id)
     word_pos[1], word_pos[2] = word_substring:find(word)
   end
   if word_pos[1] == nil then
-    return { -1, -1 }
+    return { word_start = -1, word_end = -1 }
   end
   return { word_start = word_pos[1] + cursor_col - #word - 1, word_end = word_pos[2] + cursor_col - #word - 1 }
 end
