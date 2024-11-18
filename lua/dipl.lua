@@ -216,7 +216,7 @@ end
 function M.highlight_under_cusror(word, cursor_pos, buff_id)
   local word_pos = M.get_word_position(word, cursor_pos, buff_id)
 
-  vim.api.nvim_set_hl(1, "MyHighlight", { bg = M.COLOUR_FOR_CHOICE })
+  vim.api.nvim_set_hl(1, "MyHighlight", { bg = M.COLOUR_FOR_CHOICE, fg = M.WORD_COLOUR_FOR_CHOICE })
   vim.api.nvim_buf_add_highlight(buff_id, 1, "MyHighlight", cursor_pos[1] - 1, word_pos.word_start - 1,
     word_pos.word_end)
   vim.api.nvim_set_hl_ns(1)
@@ -643,6 +643,7 @@ function M.setup(opts)
   M.DEFAULT_COLOUR = opts.DEFAULT_COLOUR or "#18fff2"
   M.NON_ACTIVE_TRANSLATE_COLOUR = opts.NON_ACTIVE_TRANSLATE_COLOUR or "#66aacc"
   M.COLOUR_FOR_CHOICE = opts.COLOUR_FOR_CHOICE or "#aaa0ff"
+  M.WORD_COLOUR_FOR_CHOICE = opts.WORD_COLOUR_FOR_CHOICE or "#cc0099"
   M.DICTS = opts.DICTS
   M.COMMENT_POPUP_SIZE = opts.COMMENT_POPUP_SIZE or { row = 10, col = 40 }
   M.COMMENT_POPUP_POSITION = opts.COMMENT_POPUP_POSITION or { row = 15, col = 70 }
