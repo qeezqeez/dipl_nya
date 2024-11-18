@@ -28,7 +28,6 @@ end
 ---@return string
 -- Search words near cursor in dictionary.
 function M.get_word_for_translate(cursor_pos, buff_id)
-  local win_id = vim.api.nvim_get_current_win()
   local word_under_cursor = vim.fn.expand("<cword>")
   local _word = word_under_cursor
 
@@ -36,59 +35,40 @@ function M.get_word_for_translate(cursor_pos, buff_id)
     return word_under_cursor
   end
 
-  local word_under_cursor_pos = M.get_word_position(word_under_cursor, cursor_pos, buff_id)
+  local _pos_before = M.get_word_position(word_under_cursor, cursor_pos, buff_id)
+  local _pos_after = _pos_before
   local word_before = ""
   local word_after = ""
   for i = 1, 2, 1 do
-    local _pos = { cursor_pos[1], word_under_cursor_pos.word_start - 2 }
+    local _pos = { cursor_pos[1], _pos_before.word_start - 3 }
     vim.fn.cursor(unpack(_pos))
     word_before = vim.fn.expand("<cword>") .. " " .. word_before
     if CURRENT_DICTIONARY[M.get_dictionary_word(word_before .. _word)] ~= nil then
       vim.fn.cursor(unpack(cursor_pos))
       return word_before .. _word
     end
+    _pos_before = M.get_word_position(vim.fn.expand("<cword>"),
+      { cursor_pos[1], _pos_before.word_start - 3 }, buff_id)
 
-    _pos = { cursor_pos[1], word_under_cursor_pos.word_end + 2 }
+    _pos = { cursor_pos[1], _pos_after.word_end + 3 }
     vim.fn.cursor(unpack(_pos))
     word_after = word_after .. " " .. vim.fn.expand("<cword>")
     if CURRENT_DICTIONARY[M.get_dictionary_word(_word .. word_after)] ~= nil then
       vim.fn.cursor(unpack(cursor_pos))
       return _word .. word_after
     end
+    _pos_after = M.get_word_position(vim.fn.expand("<cword>"),
+      { cursor_pos[1], _pos_after.word_end + 3 }, buff_id)
+
+    if CURRENT_DICTIONARY[M.get_dictionary_word(word_before .. _word .. word_after)] ~= nil then
+      vim.fn.cursor(unpack(cursor_pos))
+      return word_before .. _word .. word_after
+    end
   end
+
 
   vim.fn.cursor(unpack(cursor_pos))
   return word_under_cursor
-  --[[
-  print(cursor_pos[2], _word)
-  local words_before = ""
-  for i = 1, 2, 1 do
-    local _pos = { cursor_pos[1], word_under_cursor_pos.word_start - 2 }
-    vim.fn.cursor(cursor_pos[1], word_under_cursor_pos.word_start - 2)
-    words_before = vim.fn.expand("<cword>") .. " " .. words_before
-    if CURRENT_DICTIONARY[M.get_dictionary_word(words_before .. _word)] ~= nil then
-      return words_before .. _word
-    else
-      word_under_cursor_pos = M.get_word_position(vim.fn.expand("<cword>"),
-        { cursor_pos[1], word_under_cursor_pos.word_start - 2 }, buff_id)
-    end
-  end
-
-  vim.fn.cursor({ cursor_pos[1], cursor_pos[2] })
-  local words_after = ""
-  for i = 1, 2, 1 do
-    vim.fn.cursor({ cursor_pos[1], word_under_cursor_pos.word_end + 2 })
-    words_after = words_after .. " " .. vim.fn.expand("<cword>")
-    if CURRENT_DICTIONARY[M.get_dictionary_word(_word .. words_after)] ~= nil then
-      return _word .. words_after
-    else
-      word_under_cursor_pos = M.get_word_position(vim.fn.expand("<cword>"),
-        { cursor_pos[1], word_under_cursor_pos.word_end + 2 }, buff_id)
-    end
-  end
-  vim.fn.cursor(cursor_pos)
-  return ""
---]]
 end
 
 -- Highlights non translated in text keywords from dictionary.
@@ -225,7 +205,7 @@ function M.get_word_position(word, cursor_pos, buff_id)
     word_pos[1], word_pos[2] = word_substring:find(word)
   end
   if word_pos[1] == nil then
-    return { nil, nil }
+    return { -1, -1 }
   end
   return { word_start = word_pos[1] + cursor_col - #word - 1, word_end = word_pos[2] + cursor_col - #word - 1 }
 end
