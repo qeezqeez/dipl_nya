@@ -217,8 +217,8 @@ function M.highlight_under_cusror(word, cursor_pos, buff_id)
   local word_pos = M.get_word_position(word, cursor_pos, buff_id)
 
   vim.api.nvim_set_hl(1, "MyHighlight", { bg = M.COLOUR_FOR_CHOICE, fg = M.WORD_COLOUR_FOR_CHOICE })
-  vim.api.nvim_buf_add_highlight(buff_id, 1, "MyHighlight", cursor_pos[1] - 1, word_pos.word_start - 1,
-    word_pos.word_end)
+  vim.api.nvim_buf_add_highlight(buff_id, 1, "MyHighlight", cursor_pos[1] - 1, word_pos.word_start - 2,
+    word_pos.word_end + 1)
   vim.api.nvim_set_hl_ns(1)
 end
 
@@ -489,8 +489,19 @@ function M.draw_current_dictionary_selecter()
 
   local word = M.get_word_for_translate({ vim.fn.getcurpos(win_id)[2], vim.fn.getcurpos(win_id)[3] },
     current_buffer)
+  local _word = vim.fn.expand("<cword>")
 
   local Menu = require("nui.menu")
+
+  -- Place of word under cursor.
+  local word_pos_string = ""
+  for w in word:gmatch("%a+") do
+    if w == _word then
+      word_pos_string = word_pos_string .. "■"
+    else
+      word_pos_string = word_pos_string .. "□"
+    end
+  end
 
   local function get_lines()
     local function get_keyword_num(dict)
@@ -505,7 +516,7 @@ function M.draw_current_dictionary_selecter()
       local item = nil
       local consist_word = "" -- Mark word existence in dictionary
       if v[1][M.get_dictionary_word(word)] ~= nil then
-        consist_word = M.MARK_WORD_EXISTENCE
+        consist_word = M.MARK_WORD_EXISTENCE .. " " .. word_pos_string
       end
       -- Check highlight colour for dictionary name.
       if v[3] ~= nil then
