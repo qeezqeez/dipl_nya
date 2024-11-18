@@ -31,9 +31,6 @@ function M.get_word_for_translate(cursor_pos, buff_id)
   local word_under_cursor = vim.fn.expand("<cword>")
   local _word = word_under_cursor
 
-  if CURRENT_DICTIONARY[M.get_dictionary_word(word_under_cursor)] ~= nil then
-    return word_under_cursor
-  end
 
   local _pos_before = M.get_word_position(word_under_cursor, cursor_pos, buff_id)
   local _pos_after = _pos_before
@@ -63,6 +60,10 @@ function M.get_word_for_translate(cursor_pos, buff_id)
     if CURRENT_DICTIONARY[M.get_dictionary_word(word_before .. _word .. word_after)] ~= nil then
       vim.fn.cursor(unpack(cursor_pos))
       return word_before .. _word .. word_after
+    end
+
+    if CURRENT_DICTIONARY[M.get_dictionary_word(word_under_cursor)] ~= nil then
+      return word_under_cursor
     end
   end
 
