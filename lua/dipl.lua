@@ -74,6 +74,7 @@ end
 
 -- Highlights non translated in text keywords from dictionary.
 function M.highlight_words()
+  vim.cmd(":syntax off")
   vim.cmd(":highlight String guifg=" .. M.DEFAULT_COLOUR)
   vim.cmd(":highlight NonActiveDictionaryWord guifg=" .. M.NON_ACTIVE_TRANSLATE_COLOUR)
   for word, _ in pairs(DICTIONARIES) do
