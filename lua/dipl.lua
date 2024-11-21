@@ -78,10 +78,11 @@ function M.highlight_words()
   vim.cmd(":highlight String guifg=" .. M.DEFAULT_COLOUR)
   vim.cmd(":highlight NonActiveDictionaryWord guifg=" .. M.NON_ACTIVE_TRANSLATE_COLOUR)
   for word, _ in pairs(DICTIONARIES) do
-    vim.cmd(":syntax match NonActiveDictionaryWord '\\<" .. M.get_text_word(word) .. "\\>'")
+    vim.cmd(":syntax match NonActiveDictionaryWord '\\<" ..
+      M.get_text_word(word) .. "\\>' containedin=NonActiveDictionaryWord")
   end
   for word, _ in pairs(CURRENT_DICTIONARY) do
-    vim.cmd(":syntax match String '\\<" .. M.get_text_word(word) .. "\\>'")
+    vim.cmd(":syntax match String '\\<" .. M.get_text_word(word) .. "\\>' containedin=String")
   end
 end
 
