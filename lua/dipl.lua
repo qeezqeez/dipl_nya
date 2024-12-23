@@ -77,27 +77,19 @@ function M.highlight_words()
   vim.cmd(":syntax off")
   vim.cmd(":highlight String guifg=" .. M.DEFAULT_COLOUR)
   vim.cmd(":highlight NonActiveDictionaryWord guifg=" .. M.NON_ACTIVE_TRANSLATE_COLOUR)
-  if CURRENT_DICTIONARY_NAME ~= nil then
-    for word, _ in pairs(DICTIONARIES) do
-      if word:sub(0, 3) == "to_" then
-        vim.cmd(":syntax match NonActiveDictionaryWord '\\<" ..
-          M.get_text_word(word) .. "\\>' containedin=NonActiveDictionaryWord contains=String")
-      else
-        vim.cmd(":syntax keyword NonActiveDictionaryWord " .. M.get_text_word(word))
-      end
+  for word, _ in pairs(DICTIONARIES) do
+    if word:sub(0, 3) == "to_" then
+      vim.cmd(":syntax match NonActiveDictionaryWord '\\<" ..
+        M.get_text_word(word) .. "\\>' containedin=NonActiveDictionaryWord contains=String")
+    else
+      vim.cmd(":syntax keyword NonActiveDictionaryWord " .. M.get_text_word(word))
     end
   end
 
   for word, _ in pairs(CURRENT_DICTIONARY) do
     if word:sub(0, 3) == "to_" then
-      if word == "to_take_" then
-        print("NIG")
-      end
       vim.cmd(":syntax match String '\\<" .. M.get_text_word(word) .. "\\>' containedin=String contains=String")
     else
-      if word == "take_" then
-        print("GGER")
-      end
       vim.cmd(":syntax keyword String " .. M.get_text_word(word))
     end
   end
@@ -630,6 +622,8 @@ function M.enable()
   -- Can I do this better?
   ALL_DICTS = require("dipl_dicts")
   package.loaded["dipl_dicts"] = nil
+  CURRENT_DICTIONARY = nil
+  DICTIONARIES = {}
   for _, words in ipairs(ALL_DICTS) do
     for k, v in pairs(words[1]) do
       -- Check for repeated words. Add them all.
