@@ -1,4 +1,30 @@
 local DICTIONARIES = {}
+
+---@class Dictionary
+local Dictionary = {}
+
+function Dictionary:set_name(name)
+  self.Name = name
+end
+
+function Dictionary:get_name()
+  return self.Name
+end
+
+function Dictionary:add_word(word)
+end
+
+---@return Dictionary
+-- Cast new Dictionary instance.
+function Dictionary:new()
+  local instance = {}
+  for k, v in pairs(self) do
+    instance[k] = v
+  end
+
+  return instance
+end
+
 local files = vim.api.nvim_get_runtime_file("lua/dipl_dicts/*.lua", true)
 for i = 1, #files do
   local mod_name = files[i]:match("[^%/%\\]*$"):match("[^%.]*")

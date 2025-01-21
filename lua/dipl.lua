@@ -642,6 +642,9 @@ function M.enable()
 
   M.highlight_words()
   M.highlight_translated_words(current_buffer)
+
+  local UI = require("ui")
+
   --- MAPPINGS ---
   vim.keymap.set('n', M.KEYMAP_MENU, function()
     require('dipl').draw_menu()
