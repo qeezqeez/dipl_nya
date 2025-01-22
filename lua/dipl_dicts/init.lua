@@ -1,9 +1,13 @@
 local DICTIONARIES = {}
 
+-- Metatable. Consist word translates.
 ---@class Word
 local Word = {
+  -- Have unnamed tables with word translations. Translate have this structure:
+  -- {key = "", translate = "", colour = "", comment = ""}
   Translations = {}
 }
+Word.__index = Wprd
 
 -- Add new translate to the word in dictionary.
 ---@param key string -- Key for word.
@@ -20,25 +24,26 @@ function Word:add_translate(key, translate, colour, comment)
   table.insert(self.Translations, val)
 end
 
+-- Return new Word instance.
 ---@return Word
 function Word:new()
-  local instance = {}
-  for k, v in pairs(self) do
-    instance[k] = v
-  end
-
-  -- Prevent instances from being created from an instance.
-  instance.new = nil
-
-  return setmetatable(instance, self)
+  return setmetatable({}, self)
 end
 
+local a_test = Word:new()
+
+a_test.Translations = {}
+
+-- Metatable. Consist Word instances.
 ---@class Dictionary
 local Dictionary = {
   Name = "",
   Colour = "",
-  File_Name = ""
+  File_Name = "",
 }
+
+Dictionary.__index = Dictionary
+
 
 function Dictionary:set_name(name)
   self.Name = name
@@ -64,18 +69,10 @@ end
 function Dictionary:add_word(word)
 end
 
--- Cast new Dictionary instance.
+-- Return new Dictionary instance.
 ---@return Dictionary
 function Dictionary:new()
-  local instance = {}
-  for k, v in pairs(self) do
-    instance[k] = v
-  end
-
-  -- Prevent instances from being created from an instance.
-  instance.new = nil
-
-  return setmetatable(instance, self)
+  return setmetatable({}, self)
 end
 
 local test = Dictionary:new()
