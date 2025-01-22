@@ -5,11 +5,11 @@ local Word = {
   Translations = {}
 }
 
+-- Add new translate to the word in dictionary.
 ---@param key string -- Key for word.
 ---@param translate string -- Word translate.
 ---@param colour string -- Colour for highlight translate in "#000000" format.
 ---@param comment string -- Comment for translate.
--- Add new translate to the word in dictionary.
 function Word:add_translate(key, translate, colour, comment)
   local val = {}
   val.key = key or "default_key"
@@ -27,11 +27,18 @@ function Word:new()
     instance[k] = v
   end
 
-  return instance
+  -- Prevent instances from being created from an instance.
+  instance.new = nil
+
+  return setmetatable(instance, self)
 end
 
 ---@class Dictionary
-local Dictionary = {}
+local Dictionary = {
+  Name = "",
+  Colour = "",
+  File_Name = ""
+}
 
 function Dictionary:set_name(name)
   self.Name = name
@@ -52,19 +59,28 @@ function Dictionary:get_colour()
   return self.Colour
 end
 
+-- Add word to dictionary.
+---@param word Word
 function Dictionary:add_word(word)
 end
 
----@return Dictionary
 -- Cast new Dictionary instance.
+---@return Dictionary
 function Dictionary:new()
   local instance = {}
   for k, v in pairs(self) do
     instance[k] = v
   end
 
-  return instance
+  -- Prevent instances from being created from an instance.
+  instance.new = nil
+
+  return setmetatable(instance, self)
 end
+
+local test = Dictionary:new()
+test:set_name("Sueta")
+print(test)
 
 local files = vim.api.nvim_get_runtime_file("lua/dipl_dicts/*.lua", true)
 for i = 1, #files do
