@@ -7,7 +7,8 @@ local Word = {
   -- {key = "", translate = "", colour = "", comment = ""}
   Translations = {}
 }
-Word.__index = Wprd
+
+Word.__index = Word
 
 -- Add new translate to the word in dictionary.
 ---@param key string -- Key for word.
@@ -29,10 +30,6 @@ end
 function Word:new()
   return setmetatable({}, self)
 end
-
-local a_test = Word:new()
-
-a_test.Translations = {}
 
 -- Metatable. Consist Word instances.
 ---@class Dictionary
