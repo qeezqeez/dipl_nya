@@ -2,21 +2,24 @@ local DICTIONARIES = {}
 
 -- Metatable. Consist word translates.
 ---@class Word
+---@field Translations table Translations by position.
 local Word = {
   -- Have unnamed tables with word translations. Translate have this structure:
   -- {key = "", translate = "", colour = "", comment = ""}
+  -- TODO: Rewrite Translations structure using key from translate as a key for translate.
   Translations = {}
 }
 
 Word.__index = Word
 
 -- Add new translate to the word in dictionary.
----@param key string -- Key for word.
+---@param key string -- Key for word should be unique.
 ---@param translate string -- Word translate.
 ---@param colour string -- Colour for highlight translate in "#000000" format.
 ---@param comment string -- Comment for translate.
 function Word:add_translate(key, translate, colour, comment)
   local val = {}
+  -- TODO: If key already exists in self.Translations, then rewrite translate.
   val.key = key or "default_key"
   val.translate = translate or "default_translate"
   val.colour = colour or "#ff0000"
