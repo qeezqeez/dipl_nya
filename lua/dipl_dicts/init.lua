@@ -54,29 +54,13 @@ local Dictionary = {
 
 Dictionary.__index = Dictionary
 
-
-function Dictionary:set_name(name)
-  self.Name = name
-end
-
----@return string
-function Dictionary:get_name()
-  return self.Name
-end
-
----@param colour string -- Colour in "#000000" format.
-function Dictionary:set_colour(colour)
-  self.Colour = colour
-end
-
----@return string
-function Dictionary:get_colour()
-  return self.Colour
-end
-
 -- Add word to dictionary.
 ---@param word Word
 function Dictionary:add_word(word)
+end
+
+function Dictionary:get_words()
+  return self.Words
 end
 
 -- Return new Dictionary instance.
@@ -92,7 +76,10 @@ for i = 1, #files do
     local dict, dict_name, dict_colour = unpack(require("dipl_dicts." .. mod_name))
 
     if dict_name ~= nil then -- Dicts without name is unused.
-      table.insert(DICTIONARIES, { dict, dict_name, dict_colour })
+      DICTIONARIES[dict_name] = Dictionary:new()
+      DICTIONARIES[dict_name].Name = dict_name
+      DICTIONARIES[dict_name].Colour = dict_colour
+      DICTIONARIES[dict_name].File_name = mod_name
     end
 
     package.loaded["dipl_dicts." .. mod_name] = nil
