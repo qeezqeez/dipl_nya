@@ -4,16 +4,15 @@ local DICTIONARIES = {}
 ---@class Word
 ---@field Translations table -- Translations by position.
 local Word = {
-  -- Have unnamed tables with word translations. Translate have this structure:
-  -- {key = "", translate = "", colour = "", comment = ""}
-  -- TODO: Rewrite Translations structure using key from translate as a key for translate.
+  -- Consist word translates by key. Translations[[key]] return table with
+  -- following structure {translate = "", colour = "", comment = ""}
   Translations = {}
 }
 
 Word.__index = Word
 
--- Add new translate to the word in dictionary.
----@param key string -- Key for word should be unique.
+-- Add new translate for the word in dictionary.
+---@param key string -- Key for word.
 ---@param translate string -- Word translate.
 ---@param colour string -- Colour for highlight translate in "#000000" format.
 ---@param comment string -- Comment for translate.
@@ -26,6 +25,12 @@ function Word:add_translate(key, translate, colour, comment)
   ts.translate = translate or "default_translate"
   ts.colour = colour or "#ff0000"
   ts.comment = comment or "default_comment"
+end
+
+-- Delete translate for the word in dictionary.
+---@param key string -- Key for word.
+function Word:delete_translate(key)
+  self.Translations[key] = nil
 end
 
 -- Return new Word instance.
@@ -79,10 +84,6 @@ end
 function Dictionary:new()
   return setmetatable({}, self)
 end
-
-local test = Dictionary:new()
-test:set_name("Sueta")
-print(test)
 
 local files = vim.api.nvim_get_runtime_file("lua/dipl_dicts/*.lua", true)
 for i = 1, #files do
