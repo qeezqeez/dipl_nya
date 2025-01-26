@@ -1,3 +1,4 @@
+---@type table<Dictionary>
 local DICTIONARIES = {}
 
 -- Metatable. Consist word translates.
@@ -71,21 +72,23 @@ local files = vim.api.nvim_get_runtime_file("lua/dipl_dicts/*.lua", true)
 for i = 1, #files do
   local mod_name = files[i]:match("[^%/%\\]*$"):match("[^%.]*")
   if mod_name ~= "init" then
-    local dict, dict_name, dict_colour = unpack(require("dipl_dicts." .. mod_name))
+    local dict_items, dict_name, dict_colour = unpack(require("dipl_dicts." .. mod_name))
 
     if dict_name ~= nil then -- Dicts without name is unused.
       DICTIONARIES[dict_name] = Dictionary:new()
+      ---@type Dictionary
       local dt = DICTIONARIES[dict_name]
 
       dt.Name = dict_name
       dt.Colour = dict_colour
       dt.File_name = mod_name
 
-      for k, v in pairs(dict) do
-        dt.Words[k] = Word:new()
+      for k, v in pairs(dict_items) do
+        local word = Word:new()
+        dt.Words[k] = word
 
         for _, wv in ipairs(v) do
-          dt.Words[k].add_translate(wv.key, wv.translate, wv.colour, wv.comment)
+          word:add_translate(wv.key, wv.translate, wv.colour, wv.comment)
         end
       end
     end
