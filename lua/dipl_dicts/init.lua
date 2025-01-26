@@ -54,11 +54,8 @@ local Dictionary = {
 
 Dictionary.__index = Dictionary
 
--- Add word to dictionary.
----@param word Word
-function Dictionary:add_word(word)
-end
-
+-- Return table with Word.
+---@return table<Word>
 function Dictionary:get_words()
   return self.Words
 end
@@ -69,6 +66,7 @@ function Dictionary:new()
   return setmetatable({}, self)
 end
 
+-- Read and load dictionary files in lua/dipl_dicts.
 local files = vim.api.nvim_get_runtime_file("lua/dipl_dicts/*.lua", true)
 for i = 1, #files do
   local mod_name = files[i]:match("[^%/%\\]*$"):match("[^%.]*")
@@ -77,9 +75,19 @@ for i = 1, #files do
 
     if dict_name ~= nil then -- Dicts without name is unused.
       DICTIONARIES[dict_name] = Dictionary:new()
-      DICTIONARIES[dict_name].Name = dict_name
-      DICTIONARIES[dict_name].Colour = dict_colour
-      DICTIONARIES[dict_name].File_name = mod_name
+      local dt = DICTIONARIES[dict_name]
+
+      dt.Name = dict_name
+      dt.Colour = dict_colour
+      dt.File_name = mod_name
+
+      for k, v in pairs(dict) do
+        dt.Words[k] = Word:new()
+
+        for _, wv in ipairs(v) do
+          dt.Words[k].add_translate(wv.key, wv.translate, wv.colour, wv.comment)
+        end
+      end
     end
 
     package.loaded["dipl_dicts." .. mod_name] = nil
