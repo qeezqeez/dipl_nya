@@ -1,5 +1,7 @@
 local M = {}
 
+Dipl = require("dipl")
+
 -- Return completed comment popup for menu.
 ---@return NuiPopup
 function M.get_comment_popup(win_id)
@@ -69,7 +71,30 @@ function M.init_menu(word, cursor_pos, word_pos, win_id, buff_id, dictionary)
     for key, value in word_instance.Translations do
       item_index = item_index + 1
     end
+    return menu_items
   end
+  local menu = Menu(popup_options, {
+    lines     = get_menu_items(dictionary.Words[word]),
+    keymap    = {
+      focus_next = { "j", "<Down>" },
+      focus_prev = { "k", "<Up>" },
+      close = { "<Esc>", "q" },
+      submit = { "<CR>" },
+    },
+    on_close  = function()
+      if popup then
+        popup:unmount()
+      end
+      vim.api.nvim_buf_clear_namespace(buff_id, 1, 0, -1)
+      Dipl.highlight_translated_words(buff_id)
+    end,
+
+    on_change = function(item, menu)
+      vim.api.nvim_buf_clear_namespace(buff_id, 1, 0, 1)
+      local comment = {}
+    end,
+    on_submit = function(item) end
+  })
 end
 
 return M
