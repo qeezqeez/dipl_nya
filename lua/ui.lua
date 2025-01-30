@@ -68,8 +68,15 @@ function M.init_menu(word, cursor_pos, word_pos, win_id, buff_id, dictionary)
 
     -- Item index for display translate number in menu popup.
     local item_index = 0
+    local menu_items = {}
     for key, value in word_instance.Translations do
       item_index = item_index + 1
+
+      local NuiLine = require("nui.linne")
+      ---@type NuiLine
+      local line = NuiLine()
+      vim.cmd(":highlight " .. "colour" .. item_index .. " guifg=" .. value.colour)
+      line:append("", "colour" .. item_index)
     end
     return menu_items
   end
