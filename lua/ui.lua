@@ -55,6 +55,9 @@ function M.init_menu(word, cursor_pos, word_pos, win_id, buff_id, dictionary)
     return nil
   end
 
+  ---@type Word
+  local Dictionary_word = dictionary.Words[word]
+
   -- Popup for comment.
   local popup = M.get_comment_popup(win_id)
 
@@ -71,12 +74,18 @@ function M.init_menu(word, cursor_pos, word_pos, win_id, buff_id, dictionary)
     local menu_items = {}
     for key, value in word_instance.Translations do
       item_index = item_index + 1
+      local str = key .. " " .. value.translate
 
+      -- Use nui.line for simple highlight.
       local NuiLine = require("nui.line")
       ---@type NuiLine
       local line = NuiLine()
+      -- Do color for translation line.
       vim.cmd(":highlight " .. "colour" .. item_index .. " guifg=" .. value.colour)
-      line:append("", "colour" .. item_index)
+      line:append(str, "colour" .. item_index)
+
+      -- Add info line and values of translations.
+      table.insert(menu_items, Menu.item(line, value))
     end
     return menu_items
   end
@@ -124,6 +133,7 @@ function M.init_menu(word, cursor_pos, word_pos, win_id, buff_id, dictionary)
     on_change = function(item, menu)
       vim.api.nvim_buf_clear_namespace(buff_id, 1, 0, 1)
       local comment = {}
+      for i in item.comment do end
     end,
     on_submit = function(item) end
   })
