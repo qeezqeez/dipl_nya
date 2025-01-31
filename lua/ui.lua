@@ -72,7 +72,7 @@ function M.init_menu(word, cursor_pos, word_pos, win_id, buff_id, dictionary)
     for key, value in word_instance.Translations do
       item_index = item_index + 1
 
-      local NuiLine = require("nui.linne")
+      local NuiLine = require("nui.line")
       ---@type NuiLine
       local line = NuiLine()
       vim.cmd(":highlight " .. "colour" .. item_index .. " guifg=" .. value.colour)
@@ -80,6 +80,31 @@ function M.init_menu(word, cursor_pos, word_pos, win_id, buff_id, dictionary)
     end
     return menu_items
   end
+  local popup_options = {
+    relative = "win",
+
+    size = {
+      width = "49%",
+      height = 10,
+    },
+
+    position = {
+      row = "100%",
+      col = 0,
+    },
+
+    border = {
+      style = "rounded",
+      text = {
+        top = "[" .. dictionary.Name .. "] " .. Dipl.get_text_word(word),
+        top_align = "center",
+      },
+    },
+
+    win_options = {
+      winhighlight = "Normal:Normal",
+    }
+  }
   local menu = Menu(popup_options, {
     lines     = get_menu_items(dictionary.Words[word]),
     keymap    = {
