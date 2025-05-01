@@ -508,9 +508,9 @@ function M.draw_current_dictionary_selecter()
   local word = M.get_word_for_translate({ vim.fn.getcurpos(win_id)[2], vim.fn.getcurpos(win_id)[3] },
     current_buffer, true)
   local _word = vim.fn.expand("<cword>")
-
   local Menu = require("nui.menu")
 
+  print("DEBUG")
   -- Place of word under cursor.
   local function get_lines()
     local function get_keyword_num(dict)
@@ -520,11 +520,14 @@ function M.draw_current_dictionary_selecter()
       end
       return counter
     end
+
     local consist_word = nil
     local items = {}
+    local ex_items = {} -- Table for all items.
     for i, v in ipairs(ALL_DICTS) do
       local item = nil
-      consist_word = "" -- Mark word existence in dictionary.
+      local ex_item = nil -- Item for case when word does not have any translate.
+      consist_word = ""   -- Mark word existence in dictionary.
 
       for index, value in ipairs(word) do
         local word_pos_string = ""
@@ -539,29 +542,50 @@ function M.draw_current_dictionary_selecter()
 
         if v[1][M.get_dictionary_word(value)] ~= nil then
           consist_word = M.MARK_WORD_EXISTENCE .. " " .. word_pos_string
+
+          -- Check highlight colour for dictionary name.
+          if v[3] ~= nil then
+            local NuiLine = require("nui.line")
+            local line = NuiLine()
+            vim.cmd(":highlight " .. "dict_colour" .. i .. " guifg=" .. v[3])
+            line:append(v[2] .. " [" .. get_keyword_num(v[1]) .. "] " .. consist_word,
+              "dict_colour" .. i)
+            item = Menu.item(line, v)
+          else
+            item = Menu.item(v[2] .. " [" .. get_keyword_num(v[1]) .. "] " .. consist_word, v)
+          end
+
           break
         end
       end
 
       -- Check highlight colour for dictionary name.
+      -- Do it for case when word does not have translate.
       if v[3] ~= nil then
         local NuiLine = require("nui.line")
         local line = NuiLine()
         vim.cmd(":highlight " .. "dict_colour" .. i .. " guifg=" .. v[3])
         line:append(v[2] .. " [" .. get_keyword_num(v[1]) .. "] " .. consist_word,
           "dict_colour" .. i)
-        item = Menu.item(line, v)
+        ex_item = Menu.item(line, v)
       else
-        item = Menu.item(v[2] .. " [" .. get_keyword_num(v[1]) .. "] " .. consist_word, v)
+        ex_item = Menu.item(v[2] .. " [" .. get_keyword_num(v[1]) .. "] " .. consist_word, v)
       end
 
       table.insert(items, item)
+      table.insert(ex_items, ex_item)
     end
 
-
-    -- Arrange dictionaries in alphabetical order
-    table.sort(items, function(a, b) return a[2] < b[2] end)
-    return items
+    -- If word does not exists in any dictionary then return all dictionaries.
+    if #items ~= 0 then
+      -- Arrange dictionaries in alphabetical order
+      table.sort(items, function(a, b) return a[2] < b[2] end)
+      return items
+    else
+      -- Arrange dictionaries in alphabetical order
+      table.sort(ex_items, function(a, b) return a[2] < b[2] end)
+      return ex_items
+    end
   end
 
   local popup_options = {
