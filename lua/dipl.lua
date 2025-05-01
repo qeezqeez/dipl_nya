@@ -510,7 +510,6 @@ function M.draw_current_dictionary_selecter()
   local _word = vim.fn.expand("<cword>")
   local Menu = require("nui.menu")
 
-  print("DEBUG")
   -- Place of word under cursor.
   local function get_lines()
     local function get_keyword_num(dict)
