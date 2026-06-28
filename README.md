@@ -11,7 +11,7 @@ add({ source = "MunifTanjim/nui.nvim"})
 ```lua
 require("dipl").setup {
   DEFAULT_COLOUR = "#000000", // цвет для слов с наличием перевода
-  COLOUR_FOR_CHOICE = "#ffffff", // цвет фона для слова, когда вы выбираете перевод
+  COLOUR_FOR_CHOICE = "#bbbbbb", // цвет фона для слова, когда вы выбираете перевод
   KEYMAP_ENABLE_PLUGIN = "<C-l>",  // кеймап для включения плагина
 }
 ```
